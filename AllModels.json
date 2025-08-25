@@ -85,16 +85,15 @@
         "colors": {
           "title": "Colores",
           "items": [
-            { "name": "Negro", "img": "BLACK.png" },
-            { "name": "Azul",  "img": "BLUE.png" },
-            { "name": "Gris",  "img": "GRAY.png" },
-            { "name": "Rojo",  "img": "RED.png" },
-            { "name": "Plata", "img": "SILVER.png" },
-            { "name": "Blanco","img": "WHITE.png" }
+            { "name": "Negro",  "img": "BLACK.png" },
+            { "name": "Azul",   "img": "BLUE.png" },
+            { "name": "Gris",   "img": "GRAY.png" },
+            { "name": "Rojo",   "img": "RED.png" },
+            { "name": "Plata",  "img": "SILVER.png" },
+            { "name": "Blanco", "img": "WHITE.png" }
           ]
         }
       }
     }
   }
 }
-
