@@ -8,17 +8,22 @@
     :root{
       --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.08);
       --ink:#111; --muted:#4b5563; --line:#1f2937; --card:#fff;
-      --padX:20px; --padY:28px;
+      --padX:20px; --padY:28px; /* se compactan con embed=1 */
     }
     *{box-sizing:border-box}
-    html, body{height:100%;}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:var(--padY) var(--padX) 48px;color:var(--ink);background:#fff;overflow:hidden}
+    html, body{height:100%}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0; padding:var(--padY) var(--padX) 48px;
+      color:var(--ink); background:#fff; overflow:hidden;
+    }
     body.embed{ --padX:10px; --padY:10px; }
+
     h1{font-size:clamp(22px,3vw,44px);margin:0 0 6px;font-weight:650}
     .subheading{margin:0 0 14px;color:var(--muted);font-size:clamp(12px,1.8vw,16px)}
 
-    /* Contenedor lógico diseñado a 1180px de ancho base */
-    .stage{width:1180px;}
+    /* Escenario base diseñado a 1180px de ancho */
+    .stage{width:1180px}
     .wrap{max-width:1180px;margin:0 auto}
 
     .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:stretch}
@@ -45,7 +50,7 @@
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
 
-    /* Autoscale: wrapper que se escala para caber en el iframe */
+    /* AutoScale: escala todo el contenido para caber en el iframe */
     #autoscaleWrap{ transform-origin: top left; width:1180px; }
   </style>
 </head>
@@ -78,68 +83,105 @@
     </div>
   </div>
 
-<script>
-(async function() {
-  const params = new URLSearchParams(location.search);
-  const modelKey = params.get("model") || "MG_RX9";
+  <script>
+  (function(){
+    const qs = new URLSearchParams(location.search);
+    const modelKey = qs.get('model');                 // sin valor por defecto
+    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
+    const embed = qs.get('embed') === '1';            // '1'  => paddings compactos
 
-  try {
-    const resp = await fetch("AllModels.json");
-    const data = await resp.json();
-    const model = data.models[modelKey];
+    if(embed) document.body.classList.add('embed');
 
-    if (!model) {
-      document.querySelector(".wrap").innerHTML = `<p>No se encontró el modelo: ${modelKey}</p>`;
-      return;
+    const hero = document.getElementById('hero');
+    const list = document.getElementById('featureList');
+    const modelTitle = document.getElementById('modelTitle');
+    const sectionTitle = document.getElementById('sectionTitle');
+    const pageTitle = document.getElementById('pageTitle');
+    const msg = document.getElementById('msg');
+    const autoscaleWrap = document.getElementById('autoscaleWrap');
+
+    let slides = [];
+    let idx = 0;
+    let imageBase = '';
+
+    function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
+    function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
+
+    function renderSlides(slidesData){
+      slides = slidesData;
+      list.innerHTML = slides.map((s, i) => `
+        <article class="feat" data-idx="${i}">
+          <h3 class="feat-title">${s.title}</h3>
+          <p class="feat-desc">${s.desc}</p>
+        </article>
+      `).join('');
+      [...document.querySelectorAll('.feat')].forEach(el => {
+        el.addEventListener('click', () => setActive(+el.dataset.idx));
+      });
     }
 
-    const section = model.sections.exterior;
-    const imageBase = model.imageBase;
-
-    // Insertar título
-    document.querySelector("h1").textContent = section.title;
-
-    // Crear slides
-    const slides = section.slides;
-    const list = document.getElementById("featureList");
-    list.innerHTML = slides.map((s, idx) => `
-      <article class="feat" data-idx="${idx}">
-        <h3 class="feat-title">${s.title}</h3>
-        <p class="feat-desc">${s.desc}</p>
-      </article>
-    `).join('');
-
-    const hero = document.getElementById("hero");
-    const items = [...document.querySelectorAll(".feat")];
-    let i = 0;
-
-    function setActive(idx){
-      i = (idx + slides.length) % slides.length;
-      hero.src = imageBase + slides[i].img;
-      hero.alt = slides[i].title;
-      hero.classList.remove("fade"); void hero.offsetWidth; hero.classList.add("fade");
-      items.forEach((el, k) => el.classList.toggle("active", k === i));
-      items[i].scrollIntoView({block:"nearest", behavior:"smooth"});
+    function setActive(newIdx){
+      if(!slides.length) return;
+      idx = (newIdx + slides.length) % slides.length;
+      const s = slides[idx];
+      hero.src = imageBase + s.img;
+      hero.alt = s.title || '';
+      hero.classList.remove('fade'); void hero.offsetWidth; hero.classList.add('fade');
+      [...document.querySelectorAll('.feat')].forEach((el, k) => el.classList.toggle('active', k === idx));
+      const activeItem = document.querySelector(`.feat[data-idx="${idx}"]`);
+      if(activeItem) activeItem.scrollIntoView({block:'nearest', behavior:'smooth'});
     }
 
-    // Eventos
-    items.forEach(el => el.addEventListener("click", () => setActive(+el.dataset.idx)));
-    document.getElementById("next").addEventListener("click", () => setActive(i+1));
-    document.getElementById("prev").addEventListener("click", () => setActive(i-1));
-    window.addEventListener("keydown", e => {
-      if(e.key === "ArrowRight") setActive(i+1);
-      if(e.key === "ArrowLeft") setActive(i-1);
+    document.getElementById('next').addEventListener('click', () => setActive(idx+1));
+    document.getElementById('prev').addEventListener('click', () => setActive(idx-1));
+    window.addEventListener('keydown', e => {
+      if(e.key === 'ArrowRight') setActive(idx+1);
+      if(e.key === 'ArrowLeft')  setActive(idx-1);
     });
 
-    // Estado inicial
-    hero.src = imageBase + (section.hero || slides[0].img);
-    setActive(0);
+    // AutoScale para iframe: ajusta todo el contenido a la ventana del iframe
+    function autoScale(){
+      if(fit !== 'auto') return; // activar con ?fit=auto
+      const baseW = 1180; // mismo que .stage
+      const baseH = autoscaleWrap.scrollHeight; // alto natural
+      const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
+      const padY = parseInt(getComputedStyle(document.body).getPropertyValue('--padY')) || 0;
+      const vw = window.innerWidth  - padX*2;
+      const vh = window.innerHeight - padY*2;
+      const s = Math.max(0.5, Math.min(vw / baseW, vh / baseH)); // límite inferior por legibilidad
+      autoscaleWrap.style.transform = `scale(${s})`;
+      autoscaleWrap.style.height = `${baseH}px`;
+      document.body.style.overflow = 'hidden';
+    }
+    window.addEventListener('resize', autoScale);
 
-  } catch (err) {
-    console.error(err);
-    document.querySelector(".wrap").innerHTML = `<p>Error cargando AllModels.json</p>`;
-  }
-})();
-</script>
+    if(!modelKey){ showMessage('No se especificó ningún modelo en la URL.'); autoScale(); return; }
+
+    fetch('AllModels.json', { cache: 'no-cache' })
+      .then(r => { if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
+      .then(data => {
+        const model = data && data.models && data.models[modelKey];
+        if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
+        clearMessage();
+
+        imageBase = model.imageBase || '';
+        const section = model.sections && model.sections.exterior;
+        if(!section || !Array.isArray(section.slides) || !section.slides.length){ showMessage(`El modelo "${modelKey}" no tiene una sección "exterior" con slides.`); autoScale(); return; }
+
+        pageTitle.textContent = `${model.displayName || modelKey} – Galería`;
+        modelTitle.textContent = model.displayName || modelKey;
+        sectionTitle.textContent = section.title || '';
+
+        renderSlides(section.slides);
+        hero.src = imageBase + (section.hero || section.slides[0].img);
+        hero.alt = section.slides[0].title || model.displayName || '';
+        setActive(0);
+
+        requestAnimationFrame(autoScale);
+        setTimeout(autoScale, 100); // reintento tras fuentes/reflow
+      })
+      .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Asegúrate de que AllModels.json esté en la raíz del repositorio.'); autoScale(); });
+  })();
+  </script>
 </body>
 </html>
