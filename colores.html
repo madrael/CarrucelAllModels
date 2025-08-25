@@ -10,6 +10,7 @@
       --ink:#111; --muted:#4b5563; --line:#1f2937; --card:#fff;
       --padX:20px; --padY:28px; /* se compactan con embed=1 */
       --gap:18px;
+      --swatch:56px; /* tamaño de burbujas */
     }
     *{box-sizing:border-box}
     html, body{height:100%}
@@ -27,24 +28,30 @@
     .stage{width:1180px}
     .wrap{max-width:1180px;margin:0 auto}
 
-    .layout{
-      display:grid; gap:var(--gap);
-      grid-template-columns: 1fr 1fr;
-    }
-    @media (max-width:900px){ .layout{ grid-template-columns: 1fr; } }
+    .layout{ display:grid; gap:var(--gap); grid-template-rows: auto auto auto; }
 
-    .figure{background:#f5f5f7;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:360px}
+    .figure{background:#f5f5f7;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:420px}
     .figure img{width:100%;height:100%;object-fit:contain;display:block}
 
-    .grid{ display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
-    @media (max-width:900px){ .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    /* Barra de burbujas (swatches) en la parte inferior */
+    .swatchesWrap{ margin-top:12px; }
+    .swatches{
+      display:flex; gap:10px; align-items:center; justify-content:center;
+      flex-wrap:wrap;
+    }
+    .swatch{
+      width:var(--swatch); height:var(--swatch);
+      border-radius:999px; border:1px solid #e5e7eb; background:#fff;
+      box-shadow:0 1px 2px rgba(0,0,0,.05);
+      overflow:hidden; cursor:pointer; position:relative;
+      display:inline-flex; align-items:center; justify-content:center;
+      transition:transform .08s, box-shadow .08s, border-color .08s;
+    }
+    .swatch:active{ transform:scale(.96) }
+    .swatch img{ width:100%; height:100%; object-fit:cover; }
+    .swatch[aria-selected="true"]{ border-color:#1f2937; box-shadow:0 0 0 2px rgba(31,41,55,.08) inset }
 
-    .card{border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.03); cursor:pointer; transition:transform .08s}
-    .card:active{transform:scale(.98)}
-    .thumb{ aspect-ratio: 4/3; background:#f5f5f7; display:flex; align-items:center; justify-content:center; overflow:hidden }
-    .thumb img{ width:100%; height:100%; object-fit:contain; display:block }
-    .meta{ padding:10px 12px; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:8px }
-    .badge{ font-size:12px; color:#374151; background:#eef2ff; border:1px solid #e5e7eb; padding:2px 8px; border-radius:999px }
+    .swatchName{ text-align:center; font-size:13px; color:#374151; margin-top:6px }
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
 
@@ -62,9 +69,10 @@
         <figure class="figure">
           <img id="hero" src="" alt="" />
         </figure>
-        <section>
-          <div id="colorGrid" class="grid" aria-label="Colores disponibles"></div>
-        </section>
+
+        <div class="swatchesWrap">
+          <div id="swatches" class="swatches" role="listbox" aria-label="Selecciona un color"></div>
+        </div>
       </div>
 
       <div id="msg" class="notice"></div>
@@ -77,11 +85,12 @@
     const modelKey = qs.get('model');                 // sin valor por defecto
     const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
     const embed = qs.get('embed') === '1';            // '1'  => paddings compactos
+    const initialIdx = parseInt(qs.get('colorIndex') || '0', 10) || 0; // opcional: seleccionar color por índice
 
     if(embed) document.body.classList.add('embed');
 
     const hero = document.getElementById('hero');
-    const grid = document.getElementById('colorGrid');
+    const swatches = document.getElementById('swatches');
     const modelTitle = document.getElementById('modelTitle');
     const sectionTitle = document.getElementById('sectionTitle');
     const pageTitle = document.getElementById('pageTitle');
@@ -90,36 +99,60 @@
 
     let imageBase = '';
     let items = [];
+    let current = 0;
 
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
 
-    function renderGrid(){
-      if(!items.length){ grid.innerHTML = ''; return; }
-      grid.innerHTML = items.map((c, i) => `
-        <article class="card" data-idx="${i}" title="${c.name || ''}">
-          <div class="thumb">
-            <img loading="lazy" src="${imageBase + c.img}" alt="${c.name || 'Color'}" />
-          </div>
-          <div class="meta">
-            <span>${c.name || 'Color'}</span>
-            <span class="badge">${i+1}/${items.length}</span>
-          </div>
-        </article>
-      `).join('');
-
-      [...document.querySelectorAll('.card')].forEach(el => el.addEventListener('click', () => {
-        const idx = +el.dataset.idx;
-        setHero(idx);
-        el.scrollIntoView({ block:'nearest', behavior:'smooth' });
-      }));
-    }
-
     function setHero(i){
       if(!items[i]) return;
+      current = i;
       const it = items[i];
       hero.src = imageBase + it.img;
       hero.alt = it.name || '';
+      // marcar seleccionado
+      [...swatches.querySelectorAll('.swatch')].forEach((el, k)=>{
+        el.setAttribute('aria-selected', String(k===i));
+      });
+      // scroll suave a burbuja activa si hay overflow
+      const active = swatches.querySelector(`.swatch[data-idx="${i}"]`);
+      if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
+    }
+
+    function renderSwatches(){
+      if(!items.length){ swatches.innerHTML=''; return; }
+      swatches.innerHTML = items.map((c, i) => `
+        <div role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
+          <img loading="lazy" src="${imageBase + c.img}" alt="${c.name || 'Color'}" />
+        </div>
+      `).join('');
+
+      // nombres debajo (en el mismo orden)
+      const nameRow = document.createElement('div');
+      nameRow.style.display='flex';
+      nameRow.style.gap='10px';
+      nameRow.style.flexWrap='wrap';
+      nameRow.style.justifyContent='center';
+      nameRow.style.marginTop='4px';
+      items.forEach((c,i)=>{
+        const span = document.createElement('div');
+        span.className='swatchName';
+        span.textContent=c.name || 'Color';
+        span.style.width = 'var(--swatch)';
+        span.style.textAlign='center';
+        nameRow.appendChild(span);
+      });
+      swatches.after(nameRow);
+
+      // eventos
+      [...swatches.querySelectorAll('.swatch')].forEach(el=>{
+        el.addEventListener('click', ()=> setHero(+el.dataset.idx));
+      });
+      // navegación por teclado (izq/der) sobre el documento
+      window.addEventListener('keydown', (e)=>{
+        if(e.key==='ArrowRight') setHero((current+1)%items.length);
+        if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
+      });
     }
 
     // AutoScale para iframe
@@ -147,7 +180,6 @@
         if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
         clearMessage();
 
-        // Tomamos solo la sección de colores separada para orden: sections.colors
         const colors = model.sections && model.sections.colors;
         if(!colors || !Array.isArray(colors.items) || !colors.items.length){ showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return; }
 
@@ -158,8 +190,8 @@
         modelTitle.textContent = model.displayName || modelKey;
         sectionTitle.textContent = colors.title || 'Colores disponibles';
 
-        renderGrid();
-        setHero(0);
+        renderSwatches();
+        setHero(Math.min(Math.max(initialIdx,0), items.length-1));
 
         requestAnimationFrame(autoScale);
         setTimeout(autoScale, 100);
