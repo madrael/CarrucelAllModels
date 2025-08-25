@@ -78,104 +78,68 @@
     </div>
   </div>
 
-  <script>
-  (function(){
-    const qs = new URLSearchParams(location.search);
-    const modelKey = qs.get('model');
-    const fit = (qs.get('fit') || '').toLowerCase(); // 'auto' para escalar
-    const embed = qs.get('embed') === '1';            // '1' para compactar paddings
+<script>
+(async function() {
+  const params = new URLSearchParams(location.search);
+  const modelKey = params.get("model") || "MG_RX9";
 
-    if(embed) document.body.classList.add('embed');
+  try {
+    const resp = await fetch("AllModels.json");
+    const data = await resp.json();
+    const model = data.models[modelKey];
 
-    const hero = document.getElementById('hero');
-    const list = document.getElementById('featureList');
-    const modelTitle = document.getElementById('modelTitle');
-    const sectionTitle = document.getElementById('sectionTitle');
-    const pageTitle = document.getElementById('pageTitle');
-    const msg = document.getElementById('msg');
-    const autoscaleWrap = document.getElementById('autoscaleWrap');
-
-    let slides = [];
-    let idx = 0;
-    let imageBase = '';
-
-    function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
-    function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
-
-    function renderSlides(slidesData){
-      slides = slidesData;
-      list.innerHTML = slides.map((s, i) => `
-        <article class="feat" data-idx="${i}">
-          <h3 class="feat-title">${s.title}</h3>
-          <p class="feat-desc">${s.desc}</p>
-        </article>
-      `).join('');
-      [...document.querySelectorAll('.feat')].forEach(el => {
-        el.addEventListener('click', () => setActive(+el.dataset.idx));
-      });
+    if (!model) {
+      document.querySelector(".wrap").innerHTML = `<p>No se encontró el modelo: ${modelKey}</p>`;
+      return;
     }
 
-    function setActive(newIdx){
-      if(!slides.length) return;
-      idx = (newIdx + slides.length) % slides.length;
-      const s = slides[idx];
-      hero.src = imageBase + s.img;
-      hero.alt = s.title;
-      hero.classList.remove('fade'); void hero.offsetWidth; hero.classList.add('fade');
-      [...document.querySelectorAll('.feat')].forEach((el, k) => el.classList.toggle('active', k === idx));
-      const activeItem = document.querySelector(`.feat[data-idx="${idx}"]`);
-      if(activeItem) activeItem.scrollIntoView({block:'nearest', behavior:'smooth'});
+    const section = model.sections.exterior;
+    const imageBase = model.imageBase;
+
+    // Insertar título
+    document.querySelector("h1").textContent = section.title;
+
+    // Crear slides
+    const slides = section.slides;
+    const list = document.getElementById("featureList");
+    list.innerHTML = slides.map((s, idx) => `
+      <article class="feat" data-idx="${idx}">
+        <h3 class="feat-title">${s.title}</h3>
+        <p class="feat-desc">${s.desc}</p>
+      </article>
+    `).join('');
+
+    const hero = document.getElementById("hero");
+    const items = [...document.querySelectorAll(".feat")];
+    let i = 0;
+
+    function setActive(idx){
+      i = (idx + slides.length) % slides.length;
+      hero.src = imageBase + slides[i].img;
+      hero.alt = slides[i].title;
+      hero.classList.remove("fade"); void hero.offsetWidth; hero.classList.add("fade");
+      items.forEach((el, k) => el.classList.toggle("active", k === i));
+      items[i].scrollIntoView({block:"nearest", behavior:"smooth"});
     }
 
-    document.getElementById('next').addEventListener('click', () => setActive(idx+1));
-    document.getElementById('prev').addEventListener('click', () => setActive(idx-1));
-    window.addEventListener('keydown', e => {
-      if(e.key === 'ArrowRight') setActive(idx+1);
-      if(e.key === 'ArrowLeft')  setActive(idx-1);
+    // Eventos
+    items.forEach(el => el.addEventListener("click", () => setActive(+el.dataset.idx)));
+    document.getElementById("next").addEventListener("click", () => setActive(i+1));
+    document.getElementById("prev").addEventListener("click", () => setActive(i-1));
+    window.addEventListener("keydown", e => {
+      if(e.key === "ArrowRight") setActive(i+1);
+      if(e.key === "ArrowLeft") setActive(i-1);
     });
 
-    // --- AutoScale para iframe: ajusta todo el contenido a la ventana del iframe ---
-    function autoScale(){
-      if(fit !== 'auto') return; // activar solo cuando ?fit=auto
-      const baseW = 1180; // mismo que .stage/.wrap
-      const baseH = autoscaleWrap.scrollHeight; // alto natural del contenido
-      const vw = window.innerWidth - (parseInt(getComputedStyle(document.body).getPropertyValue('--padX'))*2);
-      const vh = window.innerHeight - (parseInt(getComputedStyle(document.body).getPropertyValue('--padY'))*2);
-      const s = Math.max(0.5, Math.min(vw / baseW, vh / baseH)); // límite inferior 0.5 para legibilidad
-      autoscaleWrap.style.transform = `scale(${s})`;
-      autoscaleWrap.style.height = `${baseH}px`; // conservar layout interno
-      document.body.style.overflow = 'hidden';
-    }
-    window.addEventListener('resize', autoScale);
+    // Estado inicial
+    hero.src = imageBase + (section.hero || slides[0].img);
+    setActive(0);
 
-    if(!modelKey){ showMessage('No se especificó ningún modelo en la URL.'); autoScale(); return; }
-
-    fetch('AllModels.json', { cache: 'no-cache' })
-      .then(r => { if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
-      .then(data => {
-        const model = data && data.models && data.models[modelKey];
-        if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
-        clearMessage();
-
-        imageBase = model.imageBase || '';
-        const section = model.sections && model.sections.exterior;
-        if(!section || !Array.isArray(section.slides) || !section.slides.length){ showMessage(`El modelo "${modelKey}" no tiene una sección "exterior" con slides.`); autoScale(); return; }
-
-        pageTitle.textContent = `${model.displayName} – Galería`;
-        modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = section.title || '';
-
-        renderSlides(section.slides);
-        hero.src = imageBase + (section.hero || section.slides[0].img);
-        hero.alt = section.slides[0].title || model.displayName || 'Imagen';
-        setActive(0);
-
-        // escalar una vez que hay contenido
-        requestAnimationFrame(autoScale);
-        setTimeout(autoScale, 100); // seguridad tras fonts y reflow
-      })
-      .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Asegúrate de que AllModels.json esté en la raíz del repositorio.'); autoScale(); });
-  })();
-  </script>
+  } catch (err) {
+    console.error(err);
+    document.querySelector(".wrap").innerHTML = `<p>Error cargando AllModels.json</p>`;
+  }
+})();
+</script>
 </body>
 </html>
