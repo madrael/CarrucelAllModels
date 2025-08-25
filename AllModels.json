@@ -8,12 +8,36 @@
           "title": "Diseño exterior",
           "hero": "mg-rx9-exterior-01-diseno-elegante.jpg",
           "slides": [
-            { "img": "mg-rx9-exterior-01-diseno-elegante.jpg", "title": "Diseño exterior elegante y sofisticado", "desc": "La RX9 irradia un diseño que capta miradas a cada instante. Con sus manijas ocultadas añaden un toque minimalista, pero con su imponente parrilla fusionará todo el diseño para ofrecer modernidad y distinción." },
-            { "img": "mg-rx9-exterior-02-rin.jpg", "title": "Estilo y Desempeño en la RX9", "desc": "La RX9 se destaca por sus rines de aluminio de hasta 21” bitono y llantas de calidad, esta combinación asegura un estilo elegante y un manejo excepcional en cualquier condición." },
-            { "img": "mg-rx9-exterior-03-techo-panoramico.jpg", "title": "Descubre la libertad de conducir bajo un cielo abierto", "desc": "La RX9 transforma cada viaje en una experiencia única con su techo panorámico y cortina translúcida, creando un ambiente envolvente en tus recorridos." },
-            { "img": "mg-rx9-exterior-04-cajuela-electrica.jpg", "title": "Comodidad y Espacio", "desc": "La RX9 te brinda una cajuela eléctrica con apertura remota y gran capacidad, ideal para viajes largos y familiares." },
-            { "img": "mg-rx9-exterior-05-faros.jpg", "title": "Iluminación Sobresaliente", "desc": "Tecnología Full LED con luces diurnas LED DRL, mejor visibilidad y estilo moderno en todas las condiciones." },
-            { "img": "mg-rx9-exterior-06-spoiler.jpg", "title": "Iluminación Trasera Vanguardista", "desc": "Luces traseras LED de diseño innovador con 185 LEDs y spoiler doble trasero con tercera luz de freno." }
+            {
+              "img": "mg-rx9-exterior-01-diseno-elegante.jpg",
+              "title": "Diseño exterior elegante y sofisticado",
+              "desc": "La RX9 irradia un diseño que capta miradas a cada instante. Con sus manijas ocultadas añaden un toque minimalista, pero con su imponente parrilla fusionará todo el diseño para ofrecer modernidad y distinción."
+            },
+            {
+              "img": "mg-rx9-exterior-02-rin.jpg",
+              "title": "Estilo y Desempeño en la RX9",
+              "desc": "La RX9 se destaca por sus rines de aluminio de hasta 21” bitono y llantas de calidad, esta combinación asegura un estilo elegante y un manejo excepcional en cualquier condición."
+            },
+            {
+              "img": "mg-rx9-exterior-03-techo-panoramico.jpg",
+              "title": "Descubre la libertad de conducir bajo un cielo abierto y transforma tu manera de viajar",
+              "desc": "La RX9 transforma cada viaje en una experiencia única con su techo panorámico y cortina translúcida, creando un ambiente envolvente en tus recorridos. Los rieles de aluminio en el techo también añaden sofisticación y funcionalidad, enriqueciendo tu experiencia de conducción."
+            },
+            {
+              "img": "mg-rx9-exterior-04-cajuela-electrica.jpg",
+              "title": "Viaja sin límites y lleva todo lo que necesitas",
+              "desc": "La RX9 te brinda una cajuela eléctrica con apertura remota, combinando comodidad y estilo. Con capacidad de hasta 1,025L y lleva a todos, gracias a su tercera fila de asientos."
+            },
+            {
+              "img": "mg-rx9-exterior-05-faros.jpg",
+              "title": "Iluminación Sobresaliente",
+              "desc": "Incorpora tecnología Full LED, con luces diurnas LED DRL que mejoran la visibilidad y añaden un toque moderno. Además, está equipada con faros de niebla delanteros y traseros, asegurando una iluminación óptima en todas las condiciones."
+            },
+            {
+              "img": "mg-rx9-exterior-06-spoiler.jpg",
+              "title": "Iluminación Trasera Vanguardista",
+              "desc": "Brilla con un estilo inigualable gracias a sus luces traseras LED de diseño en forma de rombos, que integran 185 LED. Además, cuenta con una tercera luz de freno montada en su elegante spoiler doble trasero."
+            }
           ]
         },
         "colors": {
@@ -34,37 +58,43 @@
       "imageBase": "modelo-mg3/",
       "sections": {
         "exterior": {
-          "title": "Diseño exterior e interior",
+          "title": "Diseño exterior",
           "hero": "Exterior_1.jpg",
           "slides": [
-            { "img": "Exterior_1.jpg", "title": "Diseño compacto y urbano", "desc": "El MG3 destaca por un estilo juvenil con líneas modernas que lo hacen ideal para la ciudad." },
-            { "img": "Exterior_2.jpg", "title": "Frontal llamativo", "desc": "Su parrilla distintiva y faros estilizados le dan un carácter audaz y deportivo." },
-            { "img": "Exterior_3.jpg", "title": "Perfil dinámico", "desc": "Un lateral fluido y aerodinámico que transmite movimiento incluso estando detenido." },
-            { "img": "Exterior_4.jpg", "title": "Detalles traseros modernos", "desc": "Luces traseras elegantes y un diseño compacto que completan su look urbano." },
-            { "img": "Exterior_5.jpg", "title": "Estilo con practicidad", "desc": "Un hatchback versátil que combina estética con funcionalidad para el día a día." },
-
-            { "img": "Interior_1.jpg", "title": "Confort del conductor", "desc": "Diseño interior enfocado en la ergonomía y comodidad del conductor." },
-            { "img": "Interior_2.jpg", "title": "Tecnología al alcance", "desc": "Pantalla multimedia y controles accesibles para una experiencia conectada." },
-            { "img": "Interior_3.jpg", "title": "Volante multifunción", "desc": "Comandos al volante que facilitan el control del vehículo y el entretenimiento." },
-            { "img": "Interior_4.jpg", "title": "Asientos traseros cómodos", "desc": "Espacio para los pasajeros con asientos que garantizan confort en cada viaje." },
-            { "img": "Interior_5.jpg", "title": "Diseño interior moderno", "desc": "Acabados y texturas que elevan la experiencia dentro del MG3." },
-            { "img": "Interior_6.jpg", "title": "Espacio versátil", "desc": "Configuración de asientos que permite aprovechar mejor el espacio interior." },
-            { "img": "Interior_7.jpg", "title": "Equipamiento práctico", "desc": "Detalles interiores que combinan funcionalidad con estilo." },
-            { "img": "Interior_8.jpg", "title": "Confort integral", "desc": "Un habitáculo pensado para ofrecer comodidad a todos los ocupantes." }
+            { "img": "Exterior_1.jpg", "title": "Diseño compacto y urbano", "desc": "El MG3 destaca por un estilo juvenil con líneas modernas ideal para la ciudad." },
+            { "img": "Exterior_2.jpg", "title": "Frontal llamativo", "desc": "Parrilla distintiva y faros estilizados que proyectan un carácter deportivo." },
+            { "img": "Exterior_3.jpg", "title": "Perfil dinámico", "desc": "Lateral fluido y aerodinámico que transmite movimiento incluso al estar detenido." },
+            { "img": "Exterior_4.jpg", "title": "Detalles modernos", "desc": "Un diseño compacto con terminaciones que realzan su presencia urbana." },
+            { "img": "Exterior_5.jpg", "title": "Estilo con practicidad", "desc": "Hatchback versátil que combina estética con funcionalidad para el día a día." }
+          ]
+        },
+        "interior": {
+          "title": "Diseño interior",
+          "hero": "Interior_1.jpg",
+          "slides": [
+            { "img": "Interior_1.jpg", "title": "Confort del conductor", "desc": "Ergonomía cuidada y mandos al alcance para una conducción placentera." },
+            { "img": "Interior_2.jpg", "title": "Tecnología al alcance", "desc": "Pantalla multimedia y conectividad pensadas para tu rutina diaria." },
+            { "img": "Interior_3.jpg", "title": "Volante multifunción", "desc": "Controla funciones clave sin quitar las manos del volante." },
+            { "img": "Interior_4.jpg", "title": "Espacio para todos", "desc": "Asientos traseros confortables para acompañantes en viajes cortos o largos." },
+            { "img": "Interior_5.jpg", "title": "Acabados modernos", "desc": "Texturas y materiales que elevan la experiencia a bordo." },
+            { "img": "Interior_6.jpg", "title": "Versatilidad de uso", "desc": "Configuración de asientos que optimiza el espacio según tus necesidades." },
+            { "img": "Interior_7.jpg", "title": "Detalles prácticos", "desc": "Soluciones inteligentes para tu día a día dentro del habitáculo." },
+            { "img": "Interior_8.jpg", "title": "Confort integral", "desc": "Un entorno pensado para que todos viajen cómodos." }
           ]
         },
         "colors": {
           "title": "Colores",
           "items": [
             { "name": "Negro", "img": "BLACK.png" },
-            { "name": "Azul", "img": "BLUE.png" },
-            { "name": "Gris", "img": "GRAY.png" },
-            { "name": "Rojo", "img": "RED.png" },
+            { "name": "Azul",  "img": "BLUE.png" },
+            { "name": "Gris",  "img": "GRAY.png" },
+            { "name": "Rojo",  "img": "RED.png" },
             { "name": "Plata", "img": "SILVER.png" },
-            { "name": "Blanco", "img": "WHITE.png" }
+            { "name": "Blanco","img": "WHITE.png" }
           ]
         }
       }
     }
   }
 }
+
