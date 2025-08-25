@@ -1,1 +1,87 @@
+{
+  "models": {
+    "MG_RX9": {
+      "displayName": "MG RX9",
+      "imageBase": "modelo-rx9/",
+      "sections": {
+        "exterior": {
+          "title": "Diseño exterior",
+          "hero": "mg-rx9-exterior-01-diseno-elegante.jpg",
+          "slides": [
+            {
+              "img": "mg-rx9-exterior-01-diseno-elegante.jpg",
+              "title": "Diseño exterior elegante y sofisticado",
+              "desc": "La RX9 irradia un diseño que capta miradas a cada instante. Con sus manijas ocultadas añaden un toque minimalista, pero con su imponente parrilla fusionará todo el diseño para ofrecer modernidad y distinción."
+            },
+            {
+              "img": "mg-rx9-exterior-02-rin.jpg",
+              "title": "Estilo y Desempeño en la RX9",
+              "desc": "La RX9 se destaca por sus rines de aluminio de hasta 21” bitono y llantas de calidad, esta combinación asegura un estilo elegante y un manejo excepcional en cualquier condición."
+            },
+            {
+              "img": "mg-rx9-exterior-03-techo-panoramico.jpg",
+              "title": "Descubre la libertad de conducir bajo un cielo abierto y transforma tu manera de viajar",
+              "desc": "La RX9 transforma cada viaje en una experiencia única con su techo panorámico y cortina translúcida, creando un ambiente envolvente en tus recorridos. Los rieles de aluminio en el techo también añaden sofisticación y funcionalidad, enriqueciendo tu experiencia de conducción."
+            },
+            {
+              "img": "mg-rx9-exterior-04-cajuela-electrica.jpg",
+              "title": "Viaja sin límites y lleva todo lo que necesitas",
+              "desc": "La RX9 te brinda una cajuela eléctrica con apertura remota, combinando comodidad y estilo. Con capacidad de hasta 1,025L y lleva a todos, gracias a su tercera fila de asientos."
+            },
+            {
+              "img": "mg-rx9-exterior-05-faros.jpg",
+              "title": "Iluminación Sobresaliente",
+              "desc": "Incorpora tecnología Full LED, con luces diurnas LED DRL que mejoran la visibilidad y añaden un toque moderno. Además, está equipada con faros de niebla delanteros y traseros, asegurando una iluminación óptima en todas las condiciones."
+            },
+            {
+              "img": "mg-rx9-exterior-06-spoiler.jpg",
+              "title": "Iluminación Trasera Vanguardista",
+              "desc": "Brilla con un estilo inigualable gracias a sus luces traseras LED de diseño en forma de rombos, que integran 185 LED. Además, cuenta con una tercera luz de freno montada en su elegante spoiler doble trasero."
+            }
+          ]
+        },
+        "colors": {
+          "title": "Colores",
+          "items": [
+            { "name": "Blanco", "img": "mg-rx9-color-01-blanco.png" },
+            { "name": "Gris",   "img": "mg-rx9-color-02-gris.png" },
+            { "name": "Negro",  "img": "mg-rx9-color-03-negro.png" },
+            { "name": "Plata",  "img": "mg-rx9-color-04-plata.png" },
+            { "name": "Verde",  "img": "mg-rx9-color-05-verde.png" }
+          ]
+        }
+      }
+    },
+
+    "MG_MG3": {
+      "displayName": "MG3",
+      "imageBase": "modelo-mg3/",
+      "sections": {
+        "exterior": {
+          "title": "Diseño exterior",
+          "hero": "mg-mg3-exterior-01.jpg",
+          "slides": [
+            {
+              "img": "mg-mg3-exterior-01.jpg",
+              "title": "Diseño compacto y dinámico",
+              "desc": "El MG3 combina dimensiones urbanas con líneas modernas para un look fresco y ágil."
+            },
+            {
+              "img": "mg-mg3-exterior-02.jpg",
+              "title": "Rines deportivos",
+              "desc": "Rines de aleación que realzan su carácter juvenil y mejoran el desempeño."
+            }
+          ]
+        },
+        "colors": {
+          "title": "Colores",
+          "items": [
+            { "name": "Blanco", "img": "mg-mg3-color-01-blanco.png" },
+            { "name": "Rojo",   "img": "mg-mg3-color-02-rojo.png" }
+          ]
+        }
+      }
+    }
+  }
+}
 
