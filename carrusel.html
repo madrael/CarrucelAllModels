@@ -42,12 +42,12 @@
 </head>
 <body>
   <div class="wrap">
-    <h1 id="modelTitle">Modelo</h1>
+    <h1 id="modelTitle"></h1>
     <p id="sectionTitle" class="subheading">&nbsp;</p>
 
     <div class="grid">
       <figure class="figure">
-        <img id="hero" src="" alt="Imagen principal" />
+        <img id="hero" src="" alt="" />
       </figure>
       <section class="textCol">
         <div id="featureList" class="features" aria-label="Características"></div>
@@ -69,7 +69,7 @@
   <script>
   (function(){
     const qs = new URLSearchParams(location.search);
-    const modelKey = (qs.get('model') || 'MG_RX9').trim();
+    const modelKey = qs.get('model');
 
     const hero = document.getElementById('hero');
     const list = document.getElementById('featureList');
@@ -122,7 +122,11 @@
       if(e.key === 'ArrowLeft')  setActive(idx-1);
     });
 
-    // Carga del JSON (evita cache agresivo de GitHub Pages)
+    if(!modelKey){
+      showMessage('No se especificó ningún modelo en la URL.');
+      return;
+    }
+
     fetch('AllModels.json', { cache: 'no-cache' })
       .then(r => { if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
       .then(data => {
@@ -142,11 +146,10 @@
 
         pageTitle.textContent = `${model.displayName} – Galería`;
         modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = section.title || 'Diseño exterior';
+        sectionTitle.textContent = section.title || '';
 
         renderSlides(section.slides);
 
-        // Hero inicial
         hero.src = imageBase + (section.hero || section.slides[0].img);
         hero.alt = section.slides[0].title || model.displayName || 'Imagen';
         setActive(0);
