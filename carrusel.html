@@ -87,6 +87,8 @@
   (function(){
     const qs = new URLSearchParams(location.search);
     const modelKey = qs.get('model');                 // sin valor por defecto
+    const isInterior = (qs.get('Interior') || 'NO').toUpperCase() === 'SI';
+    const sectionKey = isInterior ? 'interior' : 'exterior';
     const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
     const embed = qs.get('embed') === '1';            // '1'  => paddings compactos
 
@@ -165,12 +167,12 @@
         clearMessage();
 
         imageBase = model.imageBase || '';
-        const section = model.sections && model.sections.exterior;
-        if(!section || !Array.isArray(section.slides) || !section.slides.length){ showMessage(`El modelo "${modelKey}" no tiene una sección "exterior" con slides.`); autoScale(); return; }
+        const section = model.sections && model.sections[sectionKey];
+        if(!section || !Array.isArray(section.slides) || !section.slides.length){ showMessage(`El modelo "${modelKey}" no tiene una sección "${sectionKey}" con slides.`); autoScale(); return; }
 
         pageTitle.textContent = `${model.displayName || modelKey} – Galería`;
         modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = section.title || '';
+        sectionTitle.textContent = section.title || (isInterior ? 'Interior' : 'Exterior');
 
         renderSlides(section.slides);
         hero.src = imageBase + (section.hero || section.slides[0].img);
