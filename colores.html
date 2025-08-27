@@ -6,62 +6,53 @@
   <title id="pageTitle">Colores – Modelos</title>
   <style>
     :root{
-      --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.08);
-      --ink:#111; --muted:#4b5563; --line:#1f2937; --card:#fff;
+      --ink:#111; --muted:#4b5563; --card:#fff; --ring:#d1d5db;
       --padX:20px; --padY:28px; /* compacta con embed=1 */
-      --gap:16px; --swatch:56px; /* burbujas */
+      --stageW:1180px; --swatch:22px; --swatchGap:14px;
+      --railBg:#f3f4f6; --railPad:8px; --railRadius:999px;
+      --active:#059669; /* aro verde activo */
     }
     *{box-sizing:border-box}
     html, body{height:100%}
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      margin:0; padding:var(--padY) var(--padX) 48px;
-      color:var(--ink); background:#fff; overflow:hidden;
-    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:var(--padY) var(--padX) 48px;color:var(--ink);background:#fff;overflow:hidden}
     body.embed{ --padX:10px; --padY:10px; }
 
     /* Escena base pensada para iframe; se puede escalar */
-    .stage{width:1180px}
-    #autoscaleWrap{ transform-origin: top left; width:1180px; }
-    .wrap{max-width:1180px;margin:0 auto}
+    #autoscaleWrap{ transform-origin: top left; width:var(--stageW); }
+    .wrap{max-width:var(--stageW);margin:0 auto}
 
-    h1{font-size:clamp(22px,3vw,40px);margin:0 0 6px;font-weight:650}
-    .subheading{margin:0 0 14px;color:var(--muted);font-size:clamp(12px,1.8vw,16px)}
+    h1{font-size:clamp(20px,3vw,32px);margin:0 0 6px;font-weight:650}
+    .subheading{margin:0 0 16px;color:var(--muted);font-size:14px}
 
-    /* HERO inspirado en mg-rx9-color.html: imagen centrada, caption superpuesto */
-    .figure{position:relative;background:#f5f5f7;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:440px}
+    /* Contenedor estilo tarjeta (como el original) */
+    .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px}
+
+    /* HERO: imagen centrada y grande */
+    .figure{background:#fff;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px}
     .figure img{width:100%;height:100%;object-fit:contain;display:block}
-    .caption{position:absolute;left:14px;bottom:14px;background:rgba(32,33,36,.65);color:#fff;padding:8px 12px;border-radius:10px;font-size:14px;backdrop-filter:blur(6px)}
 
-    /* Barra de burbujas inferior (formato original) */
-    .swatchesWrap{ margin-top:12px }
-    .swatches{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
-    .swatch{width:var(--swatch);height:var(--swatch);border-radius:999px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow:hidden;cursor:pointer;position:relative;display:inline-flex;align-items:center;justify-content:center;transition:transform .08s,border-color .08s,box-shadow .08s}
-    .swatch:active{transform:scale(.96)}
-    .swatch img{width:100%;height:100%;object-fit:cover}
-    .swatch[aria-selected="true"]{border-color:#1f2937;box-shadow:0 0 0 2px rgba(31,41,55,.08) inset}
-
-    .legend{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:6px;color:#374151;font-size:13px}
-    .dot{width:8px;height:8px;border-radius:999px;background:#1f2937}
+    /* Rail de burbujas inferior (píldora) */
+    .rail{display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);background:var(--railBg);padding:var(--railPad);border-radius:var(--railRadius);width:max-content;margin:14px auto 0 auto}
+    .swatch{width:var(--swatch);height:var(--swatch);border-radius:999px;border:2px solid var(--ring);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .08s,border-color .12s}
+    .swatch:active{transform:scale(.95)}
+    .swatch img{width:100%;height:100%;object-fit:cover;border-radius:999px}
+    .swatch[aria-selected="true"]{border-color:var(--active)}
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
   </style>
 </head>
 <body>
-  <div id="autoscaleWrap" class="stage">
+  <div id="autoscaleWrap">
     <div class="wrap">
       <h1 id="modelTitle"></h1>
       <p id="sectionTitle" class="subheading">&nbsp;</p>
 
-      <figure class="figure">
-        <img id="hero" src="" alt="" />
-        <div id="caption" class="caption" hidden></div>
-      </figure>
-
-      <!-- Burbujas abajo como en el diseño original -->
-      <div class="swatchesWrap">
-        <div id="swatches" class="swatches" role="listbox" aria-label="Selecciona un color"></div>
-        <div class="legend"><span class="dot"></span><span id="legendText">Usa las burbujas para ver cada color</span></div>
+      <div class="card">
+        <figure class="figure">
+          <img id="hero" src="" alt="" />
+        </figure>
+        <!-- Píldora de burbujas inferior (idéntico al patrón visual del original) -->
+        <div id="rail" class="rail" role="listbox" aria-label="Selecciona un color"></div>
       </div>
 
       <div id="msg" class="notice"></div>
@@ -72,15 +63,14 @@
   (function(){
     const qs = new URLSearchParams(location.search);
     const modelKey = qs.get('model');                 // requerido
-    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
+    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar para iframe
     const embed = qs.get('embed') === '1';            // '1'  => compactar paddings
     const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
 
     if(embed) document.body.classList.add('embed');
 
     const hero = document.getElementById('hero');
-    const caption = document.getElementById('caption');
-    const swatches = document.getElementById('swatches');
+    const rail = document.getElementById('rail');
     const modelTitle = document.getElementById('modelTitle');
     const sectionTitle = document.getElementById('sectionTitle');
     const pageTitle = document.getElementById('pageTitle');
@@ -101,26 +91,24 @@
       const src = imageBase + it.img;
       hero.src = src;
       hero.alt = it.name || 'Color';
-      if(it.name){ caption.textContent = it.name; caption.hidden = false; }
-      else { caption.hidden = true; }
-      // marcar seleccionado
-      [...swatches.querySelectorAll('.swatch')].forEach((el, k)=>{
+      // Marcar seleccionado
+      [...rail.querySelectorAll('.swatch')].forEach((el, k)=>{
         el.setAttribute('aria-selected', String(k===i));
       });
-      // llevar a vista si hay overflow
-      const active = swatches.querySelector(`.swatch[data-idx="${i}"]`);
-      if(active) active.scrollIntoView({inline:'nearest', block:'nearest', behavior:'smooth'});
+      // Llevar a vista si hay overflow horizontal
+      const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
+      if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
     }
 
-    function renderSwatches(){
-      if(!items.length){ swatches.innerHTML=''; return; }
-      swatches.innerHTML = items.map((c, i) => `
+    function renderRail(){
+      if(!items.length){ rail.innerHTML=''; return; }
+      rail.innerHTML = items.map((c, i) => `
         <button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
           <img loading="lazy" src="${imageBase + c.img}" alt="${c.name || 'Color'}" />
         </button>
       `).join('');
-      [...swatches.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
-      // navegación con teclas (izq/der)
+      [...rail.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
+      // Navegación con teclas
       window.addEventListener('keydown', (e)=>{
         if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
@@ -131,7 +119,7 @@
     // AutoScale para iframe
     function autoScale(){
       if(fit !== 'auto') return; // activar con ?fit=auto
-      const baseW = 1180; // mismo que .stage
+      const baseW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW')) || 1180;
       const baseH = autoscaleWrap.scrollHeight; // alto natural
       const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
       const padY = parseInt(getComputedStyle(document.body).getPropertyValue('--padY')) || 0;
@@ -166,7 +154,7 @@
         modelTitle.textContent = model.displayName || modelKey;
         sectionTitle.textContent = colorsRoot.title || 'Colores disponibles';
 
-        renderSwatches();
+        renderRail();
         setHero(Math.min(initialIdx, items.length-1));
 
         requestAnimationFrame(autoScale);
@@ -177,4 +165,3 @@
   </script>
 </body>
 </html>
-
