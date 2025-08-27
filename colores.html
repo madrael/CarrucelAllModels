@@ -8,9 +8,8 @@
     :root{
       --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.08);
       --ink:#111; --muted:#4b5563; --line:#1f2937; --card:#fff;
-      --padX:20px; --padY:28px; /* se compactan con embed=1 */
-      --gap:18px;
-      --swatch:56px; /* tamaño de burbujas */
+      --padX:20px; --padY:28px; /* compacta con embed=1 */
+      --gap:16px; --swatch:56px; /* burbujas */
     }
     *{box-sizing:border-box}
     html, body{height:100%}
@@ -21,42 +20,31 @@
     }
     body.embed{ --padX:10px; --padY:10px; }
 
-    h1{font-size:clamp(22px,3vw,44px);margin:0 0 6px;font-weight:650}
-    .subheading{margin:0 0 14px;color:var(--muted);font-size:clamp(12px,1.8vw,16px)}
-
-    /* Escenario base diseñado a 1180px de ancho */
+    /* Escena base pensada para iframe; se puede escalar */
     .stage{width:1180px}
+    #autoscaleWrap{ transform-origin: top left; width:1180px; }
     .wrap{max-width:1180px;margin:0 auto}
 
-    .layout{ display:grid; gap:var(--gap); grid-template-rows: auto auto auto; }
+    h1{font-size:clamp(22px,3vw,40px);margin:0 0 6px;font-weight:650}
+    .subheading{margin:0 0 14px;color:var(--muted);font-size:clamp(12px,1.8vw,16px)}
 
-    .figure{background:#f5f5f7;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:420px}
+    /* HERO inspirado en mg-rx9-color.html: imagen centrada, caption superpuesto */
+    .figure{position:relative;background:#f5f5f7;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:440px}
     .figure img{width:100%;height:100%;object-fit:contain;display:block}
+    .caption{position:absolute;left:14px;bottom:14px;background:rgba(32,33,36,.65);color:#fff;padding:8px 12px;border-radius:10px;font-size:14px;backdrop-filter:blur(6px)}
 
-    /* Barra de burbujas (swatches) en la parte inferior */
-    .swatchesWrap{ margin-top:12px; }
-    .swatches{
-      display:flex; gap:10px; align-items:center; justify-content:center;
-      flex-wrap:wrap;
-    }
-    .swatch{
-      width:var(--swatch); height:var(--swatch);
-      border-radius:999px; border:1px solid #e5e7eb; background:#fff;
-      box-shadow:0 1px 2px rgba(0,0,0,.05);
-      overflow:hidden; cursor:pointer; position:relative;
-      display:inline-flex; align-items:center; justify-content:center;
-      transition:transform .08s, box-shadow .08s, border-color .08s;
-    }
-    .swatch:active{ transform:scale(.96) }
-    .swatch img{ width:100%; height:100%; object-fit:cover; }
-    .swatch[aria-selected="true"]{ border-color:#1f2937; box-shadow:0 0 0 2px rgba(31,41,55,.08) inset }
+    /* Barra de burbujas inferior (formato original) */
+    .swatchesWrap{ margin-top:12px }
+    .swatches{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+    .swatch{width:var(--swatch);height:var(--swatch);border-radius:999px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow:hidden;cursor:pointer;position:relative;display:inline-flex;align-items:center;justify-content:center;transition:transform .08s,border-color .08s,box-shadow .08s}
+    .swatch:active{transform:scale(.96)}
+    .swatch img{width:100%;height:100%;object-fit:cover}
+    .swatch[aria-selected="true"]{border-color:#1f2937;box-shadow:0 0 0 2px rgba(31,41,55,.08) inset}
 
-    .swatchName{ text-align:center; font-size:13px; color:#374151; margin-top:6px }
+    .legend{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:6px;color:#374151;font-size:13px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#1f2937}
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
-
-    /* AutoScale: escala todo el contenido para caber en el iframe */
-    #autoscaleWrap{ transform-origin: top left; width:1180px; }
   </style>
 </head>
 <body>
@@ -65,14 +53,15 @@
       <h1 id="modelTitle"></h1>
       <p id="sectionTitle" class="subheading">&nbsp;</p>
 
-      <div class="layout">
-        <figure class="figure">
-          <img id="hero" src="" alt="" />
-        </figure>
+      <figure class="figure">
+        <img id="hero" src="" alt="" />
+        <div id="caption" class="caption" hidden></div>
+      </figure>
 
-        <div class="swatchesWrap">
-          <div id="swatches" class="swatches" role="listbox" aria-label="Selecciona un color"></div>
-        </div>
+      <!-- Burbujas abajo como en el diseño original -->
+      <div class="swatchesWrap">
+        <div id="swatches" class="swatches" role="listbox" aria-label="Selecciona un color"></div>
+        <div class="legend"><span class="dot"></span><span id="legendText">Usa las burbujas para ver cada color</span></div>
       </div>
 
       <div id="msg" class="notice"></div>
@@ -82,14 +71,15 @@
   <script>
   (function(){
     const qs = new URLSearchParams(location.search);
-    const modelKey = qs.get('model');                 // sin valor por defecto
+    const modelKey = qs.get('model');                 // requerido
     const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
-    const embed = qs.get('embed') === '1';            // '1'  => paddings compactos
-    const initialIdx = parseInt(qs.get('colorIndex') || '0', 10) || 0; // opcional: seleccionar color por índice
+    const embed = qs.get('embed') === '1';            // '1'  => compactar paddings
+    const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
 
     if(embed) document.body.classList.add('embed');
 
     const hero = document.getElementById('hero');
+    const caption = document.getElementById('caption');
     const swatches = document.getElementById('swatches');
     const modelTitle = document.getElementById('modelTitle');
     const sectionTitle = document.getElementById('sectionTitle');
@@ -108,48 +98,31 @@
       if(!items[i]) return;
       current = i;
       const it = items[i];
-      hero.src = imageBase + it.img;
-      hero.alt = it.name || '';
+      const src = imageBase + it.img;
+      hero.src = src;
+      hero.alt = it.name || 'Color';
+      if(it.name){ caption.textContent = it.name; caption.hidden = false; }
+      else { caption.hidden = true; }
       // marcar seleccionado
       [...swatches.querySelectorAll('.swatch')].forEach((el, k)=>{
         el.setAttribute('aria-selected', String(k===i));
       });
-      // scroll suave a burbuja activa si hay overflow
+      // llevar a vista si hay overflow
       const active = swatches.querySelector(`.swatch[data-idx="${i}"]`);
-      if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
+      if(active) active.scrollIntoView({inline:'nearest', block:'nearest', behavior:'smooth'});
     }
 
     function renderSwatches(){
       if(!items.length){ swatches.innerHTML=''; return; }
       swatches.innerHTML = items.map((c, i) => `
-        <div role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
+        <button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
           <img loading="lazy" src="${imageBase + c.img}" alt="${c.name || 'Color'}" />
-        </div>
+        </button>
       `).join('');
-
-      // nombres debajo (en el mismo orden)
-      const nameRow = document.createElement('div');
-      nameRow.style.display='flex';
-      nameRow.style.gap='10px';
-      nameRow.style.flexWrap='wrap';
-      nameRow.style.justifyContent='center';
-      nameRow.style.marginTop='4px';
-      items.forEach((c,i)=>{
-        const span = document.createElement('div');
-        span.className='swatchName';
-        span.textContent=c.name || 'Color';
-        span.style.width = 'var(--swatch)';
-        span.style.textAlign='center';
-        nameRow.appendChild(span);
-      });
-      swatches.after(nameRow);
-
-      // eventos
-      [...swatches.querySelectorAll('.swatch')].forEach(el=>{
-        el.addEventListener('click', ()=> setHero(+el.dataset.idx));
-      });
-      // navegación por teclado (izq/der) sobre el documento
+      [...swatches.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
+      // navegación con teclas (izq/der)
       window.addEventListener('keydown', (e)=>{
+        if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
         if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
       });
@@ -180,24 +153,28 @@
         if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
         clearMessage();
 
-        const colors = model.sections && model.sections.colors;
-        if(!colors || !Array.isArray(colors.items) || !colors.items.length){ showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return; }
+        // Soporta dos esquemas: nuevo (model.colors) y anterior (model.sections.colors)
+        const colorsRoot = model.colors || (model.sections ? model.sections.colors : null);
+        if(!colorsRoot || !Array.isArray(colorsRoot.items) || !colorsRoot.items.length){
+          showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return;
+        }
 
         imageBase = model.imageBase || '';
-        items = colors.items;
+        items = colorsRoot.items;
 
         pageTitle.textContent = `${model.displayName || modelKey} – Colores`;
         modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = colors.title || 'Colores disponibles';
+        sectionTitle.textContent = colorsRoot.title || 'Colores disponibles';
 
         renderSwatches();
-        setHero(Math.min(Math.max(initialIdx,0), items.length-1));
+        setHero(Math.min(initialIdx, items.length-1));
 
         requestAnimationFrame(autoScale);
         setTimeout(autoScale, 100);
       })
-      .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Asegúrate de que AllModels.json esté en la raíz del repositorio.'); autoScale(); });
+      .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Verifica que AllModels.json sea JSON válido y esté en la raíz.'); autoScale(); });
   })();
   </script>
 </body>
 </html>
+
