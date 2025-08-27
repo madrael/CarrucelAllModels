@@ -34,7 +34,7 @@
     .figure{background:#fff;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px;position:relative}
     .figure img{width:100%;height:100%;object-fit:contain;display:block;transform-origin:center center;transition:transform .15s ease}
 
-    /* rail/píldora de burbujas (igual al original) */
+    /* rail/píldora de burbujas */
     .rail{
       display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);
       background:var(--railBg); padding:10px; border-radius:999px; width:max-content; margin:14px auto 0 auto;
@@ -107,14 +107,14 @@
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
 
+    // URL robusta para GitHub Pages (funciona en raíz o subcarpetas)
     function jsonURL(){
-      // Para GitHub Pages: https://usuario.github.io/<repo>/*
       const segs = location.pathname.split('/').filter(Boolean);
       const repo = segs.length ? segs[0] : '';
       if (location.host.endsWith('github.io') && repo){
         return `/${repo}/AllModels.json`; // raíz del repo
       }
-      return '/AllModels.json'; // fallback
+      return '/AllModels.json';
     }
 
     function chipHex(name){
@@ -128,6 +128,8 @@
       return '#9ca3af';
     }
 
+    function applyZoom(){ hero.style.transform = `scale(${zoom})`; }
+
     function setHero(i){
       if(!items[i]) return;
       current = i;
@@ -135,12 +137,14 @@
       hero.onerror = () => { showMessage('No se pudo cargar la imagen del color. Revisa imageBase y el nombre del archivo.'); };
       hero.src = imageBase + it.img;
       hero.alt = (it.name || 'Color') + ' – vista';
+
       // marcar seleccionado
       [...rail.querySelectorAll('.swatch')].forEach((el, k)=>{ el.setAttribute('aria-selected', String(k===i)); });
       const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
       if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
-      // resetear zoom al cambiar
-      zoom = 1; applyZoom();
+
+      // ⚠️ Opción A: NO resetear zoom; mantener el valor actual
+      applyZoom();   // aplica el zoom vigente a la nueva imagen
       autoScale();
     }
 
@@ -180,7 +184,6 @@
       autoscaleWrap.style.height = `${baseH}px`;
       document.body.style.overflow = 'hidden';
     }
-    function applyZoom(){ hero.style.transform = `scale(${zoom})`; }
 
     // Controles zoom
     function bindZoomControls(){
@@ -214,7 +217,8 @@
 
         renderRail();
         bindZoomControls();
-        hero.addEventListener('load', autoScale);
+        hero.addEventListener('load', applyZoom);  // mantener zoom tras cargar
+        hero.addEventListener('load', autoScale);  // ajustar a iframe tras cargar
         setHero(Math.min(initialIdx, items.length-1));
 
         requestAnimationFrame(autoScale);
