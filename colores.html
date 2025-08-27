@@ -6,37 +6,48 @@
   <title id="pageTitle">Colores – Modelos</title>
   <style>
     :root{
-      --ink:#111; --muted:#4b5563; --card:#fff; --ring:#d1d5db;
-      --padX:20px; --padY:28px; /* compacta con embed=1 */
-      --stageW:1180px; --swatch:22px; --swatchGap:14px;
-      --railBg:#f3f4f6; --railPad:8px; --railRadius:999px;
-      --active:#059669; /* aro verde activo */
+      --ink:#111; --muted:#4b5563; --card:#fff;
+      --padX:20px; --padY:28px;                /* compacta con &embed=1 */
+      --stageW:1180px;
+      --railBg:#fff; --railBorder:#e5e7eb;     /* píldora blanca con borde sutil */
+      --swatch:22px; --swatchGap:14px;         /* tamaño de burbujas */
+      --ring:#d1d5db; --active:#059669;        /* aro gris / aro verde activo */
     }
     *{box-sizing:border-box}
     html, body{height:100%}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:var(--padY) var(--padX) 48px;color:var(--ink);background:#fff;overflow:hidden}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0; padding:var(--padY) var(--padX) 48px;
+      color:var(--ink); background:#fff; overflow:hidden;
+    }
     body.embed{ --padX:10px; --padY:10px; }
 
-    /* Escena base pensada para iframe; se puede escalar */
+    /* escenario base para iframes (escalable) */
     #autoscaleWrap{ transform-origin: top left; width:var(--stageW); }
     .wrap{max-width:var(--stageW);margin:0 auto}
 
-    h1{font-size:clamp(20px,3vw,32px);margin:0 0 6px;font-weight:650}
-    .subheading{margin:0 0 16px;color:var(--muted);font-size:14px}
+    /* ocultamos encabezados para igualar el original */
+    .wrap > h1, .wrap > .subheading{ display:none !important }
 
-    /* Contenedor estilo tarjeta (como el original) */
+    /* tarjeta y hero grande centrado */
     .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px}
-
-    /* HERO: imagen centrada y grande */
     .figure{background:#fff;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px}
     .figure img{width:100%;height:100%;object-fit:contain;display:block}
 
-    /* Rail de burbujas inferior (píldora) */
-    .rail{display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);background:var(--railBg);padding:var(--railPad);border-radius:var(--railRadius);width:max-content;margin:14px auto 0 auto}
-    .swatch{width:var(--swatch);height:var(--swatch);border-radius:999px;border:2px solid var(--ring);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .08s,border-color .12s}
-    .swatch:active{transform:scale(.95)}
-    .swatch img{width:100%;height:100%;object-fit:cover;border-radius:999px}
-    .swatch[aria-selected="true"]{border-color:var(--active)}
+    /* rail/píldora de burbujas (igual al original) */
+    .rail{
+      display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);
+      background:var(--railBg); padding:10px; border-radius:999px; width:max-content; margin:14px auto 0 auto;
+      border:1px solid var(--railBorder); box-shadow:0 4px 14px rgba(0,0,0,.06);
+    }
+    .swatch{
+      width:var(--swatch); height:var(--swatch); border-radius:999px;
+      border:2px solid var(--ring); background:transparent; display:inline-flex; align-items:center; justify-content:center;
+      cursor:pointer; padding:0; transition:transform .08s, border-color .12s;
+    }
+    .swatch:active{ transform:scale(.95) }
+    .swatch .inner{ width:70%; height:70%; border-radius:999px; display:block; background:#ccc }
+    .swatch[aria-selected="true"]{ border-color:var(--active); box-shadow:0 0 0 2px rgba(5,150,105,.12) inset }
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
   </style>
@@ -44,6 +55,7 @@
 <body>
   <div id="autoscaleWrap">
     <div class="wrap">
+      <!-- (ocultos por CSS) -->
       <h1 id="modelTitle"></h1>
       <p id="sectionTitle" class="subheading">&nbsp;</p>
 
@@ -51,7 +63,8 @@
         <figure class="figure">
           <img id="hero" src="" alt="" />
         </figure>
-        <!-- Píldora de burbujas inferior (idéntico al patrón visual del original) -->
+
+        <!-- Píldora de burbujas -->
         <div id="rail" class="rail" role="listbox" aria-label="Selecciona un color"></div>
       </div>
 
@@ -62,8 +75,8 @@
   <script>
   (function(){
     const qs = new URLSearchParams(location.search);
-    const modelKey = qs.get('model');                 // requerido
-    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar para iframe
+    const modelKey = qs.get('model');                 // requerido (?model=MG_RX9)
+    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
     const embed = qs.get('embed') === '1';            // '1'  => compactar paddings
     const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
 
@@ -71,8 +84,6 @@
 
     const hero = document.getElementById('hero');
     const rail = document.getElementById('rail');
-    const modelTitle = document.getElementById('modelTitle');
-    const sectionTitle = document.getElementById('sectionTitle');
     const pageTitle = document.getElementById('pageTitle');
     const msg = document.getElementById('msg');
     const autoscaleWrap = document.getElementById('autoscaleWrap');
@@ -88,27 +99,45 @@
       if(!items[i]) return;
       current = i;
       const it = items[i];
-      const src = imageBase + it.img;
-      hero.src = src;
-      hero.alt = it.name || 'Color';
-      // Marcar seleccionado
+      hero.src = imageBase + it.img;
+      hero.alt = (it.name || 'Color') + ' – vista';
+      // marcar seleccionado
       [...rail.querySelectorAll('.swatch')].forEach((el, k)=>{
         el.setAttribute('aria-selected', String(k===i));
       });
-      // Llevar a vista si hay overflow horizontal
+      // scroll suave a la burbuja activa si hace falta
       const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
       if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
     }
 
+    function chipHex(name){
+      if(!name) return '#9ca3af';
+      const n = String(name).toLowerCase().trim();
+      const map = {
+        // español
+        'blanco':'#f5f5f5','gris':'#9ca3af','negro':'#111827','plata':'#c7c7c7','verde':'#065f46','azul':'#1d4ed8','rojo':'#dc2626',
+        // inglés / variantes
+        'white':'#f5f5f5','gray':'#9ca3af','grey':'#9ca3af','black':'#111827','silver':'#c7c7c7','green':'#065f46','blue':'#1d4ed8','red':'#dc2626'
+      };
+      // intenta encontrar por coincidencia parcial (e.g., "Verde Botella")
+      for (const key of Object.keys(map)){
+        if (n.includes(key)) return map[key];
+      }
+      return '#9ca3af';
+    }
+
     function renderRail(){
       if(!items.length){ rail.innerHTML=''; return; }
-      rail.innerHTML = items.map((c, i) => `
-        <button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
-          <img loading="lazy" src="${imageBase + c.img}" alt="${c.name || 'Color'}" />
-        </button>
-      `).join('');
+      rail.innerHTML = items.map((c, i) => {
+        const hex = c.hex || chipHex(c.name);
+        return `
+          <button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
+            <span class="inner" style="background:${hex}"></span>
+          </button>
+        `;
+      }).join('');
       [...rail.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
-      // Navegación con teclas
+      // navegación por teclado
       window.addEventListener('keydown', (e)=>{
         if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
@@ -120,7 +149,7 @@
     function autoScale(){
       if(fit !== 'auto') return; // activar con ?fit=auto
       const baseW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW')) || 1180;
-      const baseH = autoscaleWrap.scrollHeight; // alto natural
+      const baseH = autoscaleWrap.scrollHeight;
       const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
       const padY = parseInt(getComputedStyle(document.body).getPropertyValue('--padY')) || 0;
       const vw = window.innerWidth  - padX*2;
@@ -141,7 +170,7 @@
         if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
         clearMessage();
 
-        // Soporta dos esquemas: nuevo (model.colors) y anterior (model.sections.colors)
+        // lee colors desde el esquema nuevo (model.colors) o el anterior (model.sections.colors)
         const colorsRoot = model.colors || (model.sections ? model.sections.colors : null);
         if(!colorsRoot || !Array.isArray(colorsRoot.items) || !colorsRoot.items.length){
           showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return;
@@ -151,8 +180,6 @@
         items = colorsRoot.items;
 
         pageTitle.textContent = `${model.displayName || modelKey} – Colores`;
-        modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = colorsRoot.title || 'Colores disponibles';
 
         renderRail();
         setHero(Math.min(initialIdx, items.length-1));
