@@ -32,7 +32,7 @@
     /* tarjeta y hero grande centrado */
     .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px}
     .figure{background:#fff;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px}
-    .figure img{width:100%;height:100%;object-fit:contain;display:block}
+    .figure img{$1 transform-origin:center center; transition:transform .15s ease;}
 
     /* rail/píldora de burbujas (igual al original) */
     .rail{
@@ -50,6 +50,10 @@
     .swatch[aria-selected="true"]{ border-color:var(--active); box-shadow:0 0 0 2px rgba(5,150,105,.12) inset }
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
+    /* Controles de zoom */
+  .zoom-controls{position:absolute; right:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; z-index:5}
+  .zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; display:grid; place-items:center; font-size:18px; line-height:1}
+  .zoom-btn:active{transform:scale(.96)}
   </style>
 </head>
 <body>
@@ -62,6 +66,11 @@
       <div class="card">
         <figure class="figure">
           <img id="hero" src="" alt="" />
+          <div class="zoom-controls" aria-label="Zoom">
+            <button id="zoomIn" class="zoom-btn" title="Acercar">+</button>
+            <button id="zoomOut" class="zoom-btn" title="Alejar">−</button>
+            <button id="zoomReset" class="zoom-btn" title="Restablecer">⟳</button>
+          </div>
         </figure>
 
         <!-- Píldora de burbujas -->
@@ -92,6 +101,7 @@
     let imageBase = '';
     let items = [];
     let current = 0;
+    let zoom = 1, Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12; // límites y paso de zoom
 
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
@@ -109,6 +119,8 @@
       // scroll suave a la burbuja activa si hace falta
       const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
       if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
+      // resetear zoom al cambiar de imagen
+      zoom = 1; applyZoom();
       autoScale();
     }
 
@@ -143,6 +155,9 @@
         if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
         if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
+        if(e.key==='+') { zoom = Math.min(Z_MAX, zoom + Z_STEP); applyZoom(); }
+        if(e.key==='-') { zoom = Math.max(Z_MIN, zoom - Z_STEP); applyZoom(); }
+        if(e.key==='0') { zoom = 1; applyZoom(); }
       });
     }
 
@@ -157,6 +172,10 @@
       const vh = Math.max(0, window.innerHeight - padY*2);
       const s = Math.max(minScale, Math.min(vw / baseW, vh / baseH || 1));
       autoscaleWrap.style.transform = `scale(${s})`;
+      autoscaleWrap.style.height = `${baseH}px`;
+      document.body.style.overflow = 'hidden';
+    }
+    function applyZoom(){ hero.style.transform = `scale(${zoom})`; })`;
       autoscaleWrap.style.height = `${baseH}px`;
       document.body.style.overflow = 'hidden';
     }
@@ -188,6 +207,11 @@
 
         requestAnimationFrame(autoScale);
         setTimeout(autoScale, 120);
+        // Controles de zoom
+        document.getElementById('zoomIn').addEventListener('click', ()=>{ zoom = Math.min(Z_MAX, zoom + Z_STEP); applyZoom(); });
+        document.getElementById('zoomOut').addEventListener('click', ()=>{ zoom = Math.max(Z_MIN, zoom - Z_STEP); applyZoom(); });
+        document.getElementById('zoomReset').addEventListener('click', ()=>{ zoom = 1; applyZoom(); });
+        hero.addEventListener('dblclick', ()=>{ zoom = (zoom===1?1.6:1); applyZoom(); });
       })
       .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Verifica que AllModels.json sea JSON válido y esté en la raíz.'); autoScale(); });
   })();
