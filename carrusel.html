@@ -1,82 +1,110 @@
 <!DOCTYPE html>
+<!-- 
+  /* 17-09-2025 V1.0000 (propuesta) */
+  Archivo: carrusel_LastVersion.html
+  Descripción: Carrusel dinámico (Imagen + Texto) desde AllModels.json.
+  Cambios: Layout adaptable para iframe: imagen izquierda + texto derecha (en ancho suficiente), stacking en chico. fit=auto soportado.
+-->
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title id="pageTitle">Galería – Modelos</title>
+  <title id="pageTitle">Carrusel – Modelos</title>
   <style>
     :root{
-      --radius:14px; --shadow:0 8px 24px rgba(0,0,0,.08);
-      --ink:#111; --muted:#4b5563; --line:#1f2937; --card:#fff;
-      --padX:20px; --padY:28px; /* se compactan con embed=1 */
+      --ink:#111; --muted:#4b5563; --card:#fff;
+      --padX:20px; --padY:20px;         /* compacta con &embed=1 */
+      --stageW:1180px;
+      --gap:18px;                       /* separación entre columnas */
+      --radius:16px; --shadow:0 10px 24px rgba(0,0,0,.06);
+      --railBorder:#e5e7eb;
+      --accent:#059669;
     }
     *{box-sizing:border-box}
-    html, body{height:100%}
+    html,body{height:100%}
     body{
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      margin:0; padding:var(--padY) var(--padX) 48px;
-      color:var(--ink); background:#fff; overflow:hidden;
+      margin:0; padding:var(--padY) var(--padX); color:var(--ink); background:#fff; overflow:hidden;
     }
     body.embed{ --padX:10px; --padY:10px; }
 
-    h1{font-size:clamp(22px,3vw,44px);margin:0 0 6px;font-weight:650}
-    .subheading{margin:0 0 14px;color:var(--muted);font-size:clamp(12px,1.8vw,16px)}
+    /* wrapper escalable para iframes */
+    #autoscaleWrap{ transform-origin: top left; width:var(--stageW); }
+    .wrap{ max-width:var(--stageW); margin:0 auto }
 
-    /* Escenario base diseñado a 1180px de ancho */
-    .stage{width:1180px}
-    .wrap{max-width:1180px;margin:0 auto}
+    .card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:16px;
+    }
 
-    .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:stretch}
-    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    /* ====== LAYOUT 2 columnas responsive ====== */
+    .row{
+      display:grid; gap:var(--gap);
+      grid-template-columns: 1fr;           /* apilado por defecto */
+      align-items:stretch;
+    }
+    @media (min-width: 900px){
+      .row{ grid-template-columns: 58% 42%; } /* imagen izquierda / texto derecha */
+    }
 
-    .figure{background:#f5f5f7;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;min-height:320px}
-    .figure img{width:100%;height:100%;object-fit:cover;display:block}
-    .fade{animation:fade .35s ease-out}
-    @keyframes fade{from{opacity:.2} to{opacity:1}}
+    /* contenedor de imagen */
+    .figure{
+      background:#fff; border:1px solid var(--railBorder);
+      border-radius:12px; overflow:hidden; min-height:360px;
+      display:flex; align-items:center; justify-content:center; position:relative;
+    }
+    .figure img{
+      width:100%; height:100%; object-fit:cover; display:block; /* cover para que llene la caja visual */
+    }
 
-    .textCol{border-radius:12px}
-    .features{display:flex;flex-direction:column;gap:12px}
-    .feat{background:var(--card);border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;box-shadow:0 1px 2px rgba(0,0,0,.03);position:relative;cursor:pointer}
-    .feat-title{margin:0;font-size:clamp(14px,2.2vw,18px);font-weight:650;line-height:1.35}
-    .feat-desc{margin:8px 2px 2px;color:var(--muted);line-height:1.55;font-size:clamp(12px,2vw,15px);display:none}
-    .feat.active{border-color:#d1d5db}
-    .feat.active::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:4px;border-radius:12px 0 0 12px;background:var(--line)}
-    .feat.active .feat-desc{display:block}
+    /* columna de texto */
+    .copy{
+      border:1px solid var(--railBorder); border-radius:12px;
+      padding:18px 16px; background:#fff;
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .kicker{ color:#6b7280; font-size:12px; letter-spacing:.05em; text-transform:uppercase; margin:0 0 6px }
+    .title{ font-size:22px; line-height:1.25; margin:0 0 8px; }
+    .desc{ color:#374151; line-height:1.55; margin:0 }
 
-    .controls-global{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:14px}
-    .btn{width:38px;height:38px;border-radius:50%;border:1px solid #d1d5db;background:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .08s}
-    .btn:active{transform:scale(.96)}
-    .btn svg{width:18px;height:18px}
+    /* navegación simple */
+    .nav{
+      display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px;
+    }
+    .btn{
+      appearance:none; border:1px solid var(--railBorder); background:#fff;
+      border-radius:999px; width:36px; height:36px; cursor:pointer;
+      display:grid; place-items:center; box-shadow:0 2px 8px rgba(0,0,0,.06);
+    }
+    .btn:active{ transform:scale(.97) }
 
-    .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
+    .dots{ display:flex; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--railBorder); background:#fff; }
+    .dot{ width:8px; height:8px; border-radius:999px; background:#d1d5db }
+    .dot[aria-current="true"]{ background:var(--accent) }
 
-    /* AutoScale: escala todo el contenido para caber en el iframe */
-    #autoscaleWrap{ transform-origin: top left; width:1180px; }
+    .notice{padding:10px 12px;border:1px solid var(--railBorder);border-radius:10px;background:#fff7ed;margin-top:12px;display:none}
   </style>
 </head>
 <body>
-  <!-- autoscaleWrap permite escalar todo el contenido cuando el iframe es pequeño -->
-  <div id="autoscaleWrap" class="stage">
+  <div id="autoscaleWrap">
     <div class="wrap">
-      <h1 id="modelTitle"></h1>
-      <p id="sectionTitle" class="subheading">&nbsp;</p>
+      <div class="card">
+        <div id="row" class="row">
+          <figure class="figure">
+            <img id="hero" src="" alt="" />
+          </figure>
+          <div class="copy">
+            <p id="kicker" class="kicker"></p>
+            <h2 id="title" class="title"></h2>
+            <p id="desc" class="desc"></p>
+          </div>
+        </div>
 
-      <div class="grid">
-        <figure class="figure">
-          <img id="hero" src="" alt="" />
-        </figure>
-        <section class="textCol">
-          <div id="featureList" class="features" aria-label="Características"></div>
-        </section>
-      </div>
-
-      <div class="controls-global">
-        <button class="btn" id="prev" aria-label="Anterior">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="btn" id="next" aria-label="Siguiente">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        <div class="nav">
+          <button id="prev" class="btn" title="Anterior">‹</button>
+          <div id="dots" class="dots" aria-label="Paginación"></div>
+          <button id="next" class="btn" title="Siguiente">›</button>
+        </div>
       </div>
 
       <div id="msg" class="notice"></div>
@@ -86,104 +114,128 @@
   <script>
   (function(){
     const qs = new URLSearchParams(location.search);
-    const modelKey = qs.get('model');                 // sin valor por defecto
-    const isInterior = (qs.get('Interior') || 'NO').toUpperCase() === 'SI';
-    const sectionKey = isInterior ? 'interior' : 'exterior';
-    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
-    const embed = qs.get('embed') === '1';            // '1'  => paddings compactos
+    const modelKey = qs.get('model');                 // ?model=MG_RX9
+    const interior = (qs.get('Interior') || 'NO').toUpperCase() === 'SI'; // SI => interior
+    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar wrapper para iframe
+    const embed = qs.get('embed') === '1';            // '1' => paddings compactos
+    const minScale = Math.max(0.2, Math.min(1, parseFloat(qs.get('min') || '0.5')));
 
     if(embed) document.body.classList.add('embed');
 
     const hero = document.getElementById('hero');
-    const list = document.getElementById('featureList');
-    const modelTitle = document.getElementById('modelTitle');
-    const sectionTitle = document.getElementById('sectionTitle');
-    const pageTitle = document.getElementById('pageTitle');
+    const kickerEl = document.getElementById('kicker');
+    const titleEl = document.getElementById('title');
+    const descEl = document.getElementById('desc');
+    const dots = document.getElementById('dots');
     const msg = document.getElementById('msg');
     const autoscaleWrap = document.getElementById('autoscaleWrap');
 
+    let imageBase = '';
     let slides = [];
     let idx = 0;
-    let imageBase = '';
 
-    function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
-    function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
+    function showMessage(t){ msg.textContent=t; msg.style.display='block'; }
+    function clearMessage(){ msg.textContent=''; msg.style.display='none'; }
 
-    function renderSlides(slidesData){
-      slides = slidesData;
-      list.innerHTML = slides.map((s, i) => `
-        <article class="feat" data-idx="${i}">
-          <h3 class="feat-title">${s.title}</h3>
-          <p class="feat-desc">${s.desc}</p>
-        </article>
-      `).join('');
-      [...document.querySelectorAll('.feat')].forEach(el => {
-        el.addEventListener('click', () => setActive(+el.dataset.idx));
-      });
+    // URL robusta para GH Pages (raíz o subcarpeta del repo)
+    function jsonURL(){
+      const segs = location.pathname.split('/').filter(Boolean);
+      const repo = segs.length ? segs[0] : '';
+      if(location.host.endsWith('github.io') && repo) return `/${repo}/AllModels.json`;
+      return '/AllModels.json';
     }
 
-    function setActive(newIdx){
+    function renderDots(){
+      if(!slides.length){ dots.innerHTML=''; return; }
+      dots.innerHTML = slides.map((_,i)=>`<span class="dot" data-i="${i}" aria-current="${i===idx}"></span>`).join('');
+      [...dots.children].forEach(el => el.addEventListener('click', ()=> go(+el.dataset.i)));
+    }
+
+    function paint(){
+      const s = slides[idx]; if(!s) return;
+      hero.src = imageBase + (s.img || s.image || '');
+      hero.alt = (s.alt || s.title || s.caption || 'imagen');
+      kickerEl.textContent = interior ? 'Interior' : 'Exterior';
+      titleEl.textContent = s.title || '';
+      descEl.textContent = s.desc || s.caption || '';
+      renderDots();
+      autoScale();
+    }
+
+    function go(n){
       if(!slides.length) return;
-      idx = (newIdx + slides.length) % slides.length;
-      const s = slides[idx];
-      hero.src = imageBase + s.img;
-      hero.alt = s.title || '';
-      hero.classList.remove('fade'); void hero.offsetWidth; hero.classList.add('fade');
-      [...document.querySelectorAll('.feat')].forEach((el, k) => el.classList.toggle('active', k === idx));
-      const activeItem = document.querySelector(`.feat[data-idx="${idx}"]`);
-      if(activeItem) activeItem.scrollIntoView({block:'nearest', behavior:'smooth'});
+      idx = (n + slides.length) % slides.length;
+      paint();
     }
 
-    document.getElementById('next').addEventListener('click', () => setActive(idx+1));
-    document.getElementById('prev').addEventListener('click', () => setActive(idx-1));
-    window.addEventListener('keydown', e => {
-      if(e.key === 'ArrowRight') setActive(idx+1);
-      if(e.key === 'ArrowLeft')  setActive(idx-1);
+    document.getElementById('prev').addEventListener('click', ()=> go(idx-1));
+    document.getElementById('next').addEventListener('click', ()=> go(idx+1));
+    window.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowRight') go(idx+1);
+      if(e.key==='ArrowLeft')  go(idx-1);
     });
 
-    // AutoScale para iframe: ajusta todo el contenido a la ventana del iframe
+    /* === AutoScale para iframe === */
     function autoScale(){
-      if(fit !== 'auto') return; // activar con ?fit=auto
-      const baseW = 1180; // mismo que .stage
-      const baseH = autoscaleWrap.scrollHeight; // alto natural
+      if(fit !== 'auto') return;
+      const baseW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW')) || 1180;
+      const baseH = document.querySelector('.wrap').scrollHeight;
       const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
       const padY = parseInt(getComputedStyle(document.body).getPropertyValue('--padY')) || 0;
-      const vw = window.innerWidth  - padX*2;
-      const vh = window.innerHeight - padY*2;
-      const s = Math.max(0.5, Math.min(vw / baseW, vh / baseH)); // límite inferior por legibilidad
+      const vw = Math.max(0, window.innerWidth  - padX*2);
+      const vh = Math.max(0, window.innerHeight - padY*2);
+      const s = Math.max(minScale, Math.min(vw / baseW, vh / baseH || 1));
       autoscaleWrap.style.transform = `scale(${s})`;
       autoscaleWrap.style.height = `${baseH}px`;
       document.body.style.overflow = 'hidden';
     }
     window.addEventListener('resize', autoScale);
 
-    if(!modelKey){ showMessage('No se especificó ningún modelo en la URL.'); autoScale(); return; }
+    /* === Carga de datos === */
+    if(!modelKey){ showMessage('Falta el parámetro ?model='); autoScale(); return; }
 
-    fetch('AllModels.json', { cache: 'no-cache' })
-      .then(r => { if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
-      .then(data => {
+    fetch(jsonURL(), {cache:'no-cache'})
+      .then(r=>{ if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
+      .then(data=>{
         const model = data && data.models && data.models[modelKey];
-        if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
+        if(!model){ showMessage(`No se encontró el modelo "${modelKey}"`); autoScale(); return; }
         clearMessage();
 
         imageBase = model.imageBase || '';
-        const section = model.sections && model.sections[sectionKey];
-        if(!section || !Array.isArray(section.slides) || !section.slides.length){ showMessage(`El modelo "${modelKey}" no tiene una sección "${sectionKey}" con slides.`); autoScale(); return; }
 
-        pageTitle.textContent = `${model.displayName || modelKey} – Galería`;
-        modelTitle.textContent = model.displayName || modelKey;
-        sectionTitle.textContent = section.title || (isInterior ? 'Interior' : 'Exterior');
+        // obtenemos sección exterior/interior según estructura:
+        // preferimos model.sections.exterior/interior.items
+        let section = null;
+        if(model.sections){
+          section = interior ? model.sections.interior : model.sections.exterior;
+        }
+        // si el modelo usa otra convención, intenta con model.exterior/items o model.interior/items
+        if(!section){ section = interior ? model.interior : model.exterior; }
 
-        renderSlides(section.slides);
-        hero.src = imageBase + (section.hero || section.slides[0].img);
-        hero.alt = section.slides[0].title || model.displayName || '';
-        setActive(0);
+        const items = section && Array.isArray(section.items) ? section.items : [];
+        if(!items.length){ showMessage('No hay elementos en la sección seleccionada.'); autoScale(); return; }
 
+        slides = items.map(it => ({
+          img: it.img || it.image || '',
+          title: it.title || it.titulo || '',
+          desc: it.desc || it.caption || it.text || ''
+        }));
+
+        document.getElementById('pageTitle').textContent =
+          `${model.displayName || modelKey} – ${interior?'Interior':'Exterior'}`;
+
+        idx = 0;
+        paint();
         requestAnimationFrame(autoScale);
-        setTimeout(autoScale, 100); // reintento tras fuentes/reflow
+        setTimeout(autoScale, 120);
       })
-      .catch(err => { console.error(err); showMessage('Error al cargar la configuración de modelos. Asegúrate de que AllModels.json esté en la raíz del repositorio.'); autoScale(); });
+      .catch(err=>{
+        console.error(err);
+        showMessage('Error al cargar la configuración. Verifica AllModels.json en la raíz del repo.');
+        autoScale();
+      });
   })();
   </script>
 </body>
 </html>
+
