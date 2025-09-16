@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!-- 
+  /* 16-09-2025 V1.0001 (propuesta) */
+  Archivo: colores.html
+  Descripción: Selector de colores dinámico desde AllModels.json (compatible con esquema models.colors y models.sections.colors)
+  Cambio: Soporte de zoom inicial vía &zoom= / &z= / &initialZoom= (clamp a 0.6–2.2)
+-->
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -91,6 +97,9 @@
     const minScale = Math.max(0.2, Math.min(1, parseFloat(qs.get('min') || qs.get('minScale') || '0.5')));
     const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
 
+    // --- Zoom inicial por parámetro (&zoom= / &z= / &initialZoom=), clamped a [Z_MIN, Z_MAX]
+    const rawZoom = qs.get('zoom') ?? qs.get('z') ?? qs.get('initialZoom');
+
     if(embed) document.body.classList.add('embed');
 
     const hero = document.getElementById('hero');
@@ -102,7 +111,18 @@
     let imageBase = '';
     let items = [];
     let current = 0;
-    let zoom = 1, Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12;
+
+    // límites y estado de zoom
+    const Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12;
+    let zoom = 1;
+
+    function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+    // Si vino parámetro de zoom válido, se aplica como valor inicial
+    if(rawZoom !== null){
+      const z = parseFloat(String(rawZoom).replace(',', '.'));
+      if(!Number.isNaN(z)) zoom = clamp(z, Z_MIN, Z_MAX);
+    }
 
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
@@ -143,8 +163,8 @@
       const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
       if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
 
-      // ⚠️ Opción A: NO resetear zoom; mantener el valor actual
-      applyZoom();   // aplica el zoom vigente a la nueva imagen
+      // mantener/aplicar zoom vigente (incluye el inicial si vino por URL)
+      applyZoom();   
       autoScale();
     }
 
@@ -159,13 +179,14 @@
         `;
       }).join('');
       [...rail.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
+
       // navegación por teclado
       window.addEventListener('keydown', (e)=>{
         if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
         if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
-        if(e.key==='+') { zoom = Math.min(Z_MAX, zoom + Z_STEP); applyZoom(); }
-        if(e.key==='-') { zoom = Math.max(Z_MIN, zoom - Z_STEP); applyZoom(); }
+        if(e.key==='+') { zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); applyZoom(); }
+        if(e.key==='-') { zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); applyZoom(); }
         if(e.key==='0') { zoom = 1; applyZoom(); }
       });
     }
@@ -187,10 +208,10 @@
 
     // Controles zoom
     function bindZoomControls(){
-      document.getElementById('zoomIn').addEventListener('click', ()=>{ zoom = Math.min(Z_MAX, zoom + Z_STEP); applyZoom(); });
-      document.getElementById('zoomOut').addEventListener('click', ()=>{ zoom = Math.max(Z_MIN, zoom - Z_STEP); applyZoom(); });
+      document.getElementById('zoomIn').addEventListener('click', ()=>{ zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
+      document.getElementById('zoomOut').addEventListener('click', ()=>{ zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
       document.getElementById('zoomReset').addEventListener('click', ()=>{ zoom = 1; applyZoom(); });
-      hero.addEventListener('dblclick', ()=>{ zoom = (zoom===1?1.6:1); applyZoom(); });
+      hero.addEventListener('dblclick', ()=>{ zoom = (zoom===1? clamp(1.6, Z_MIN, Z_MAX):1); applyZoom(); });
     }
 
     window.addEventListener('resize', autoScale);
@@ -217,8 +238,8 @@
 
         renderRail();
         bindZoomControls();
-        hero.addEventListener('load', applyZoom);  // mantener zoom tras cargar
-        hero.addEventListener('load', autoScale);  // ajustar a iframe tras cargar
+        hero.addEventListener('load', applyZoom);  // mantener zoom (incluye el inicial)
+        hero.addEventListener('load', autoScale);  // ajustar a iframe
         setHero(Math.min(initialIdx, items.length-1));
 
         requestAnimationFrame(autoScale);
