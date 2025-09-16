@@ -1,14 +1,5 @@
+<!-- 16-09-2025 V1.0002 -->
 <!DOCTYPE html>
-<!-- 
-  /* 16-09-2025 V1.0004 (propuesta) */
-  Archivo: colores.html
-  Descripción: Selector de colores dinámico desde AllModels.json (compatible con models.colors y models.sections.colors)
-  Cambios:
-   - V1.0001: Zoom inicial por URL (&zoom= / &z= / &initialZoom=)
-   - V1.0002: Zoom centrado con translate(-50%,-50%)
-   - V1.0003: Centrado inteligente (--lift) por análisis de alfa
-   - V1.0004: Pan (arrastrar con mouse/touch) + límites y reset
--->
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -17,8 +8,7 @@
   <style>
     :root{
       --ink:#111; --muted:#4b5563; --card:#fff;
-      --padX:20px; --padY:28px;
-      --stageW:1180px;
+      --padX:20px; --padY:28px; --stageW:1180px;
       --railBg:#fff; --railBorder:#e5e7eb;
       --swatch:22px; --swatchGap:14px;
       --ring:#d1d5db; --active:#059669;
@@ -34,45 +24,21 @@
 
     #autoscaleWrap{ transform-origin: top left; width:var(--stageW); }
     .wrap{max-width:var(--stageW);margin:0 auto}
+
     .wrap > h1, .wrap > .subheading{ display:none !important }
 
     .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px;position:relative}
-    .figure{
-      background:#fff;border-radius:16px;overflow:hidden;position:relative;
-      display:flex;align-items:center;justify-content:center;min-height:420px; user-select:none; touch-action:none;
-    }
+    .figure{background:#fff;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:420px;position:relative}
+    .figure img{width:100%;height:100%;object-fit:contain;display:block;transform-origin:center center;transition:transform .15s ease}
 
-    /* Img centrada + ajuste vertical (--lift) + pan en px (--ox, --oy) */
-    .figure img{
-      --lift: 0%;
-      --ox: 0px; /* pan horizontal */
-      --oy: 0px; /* pan vertical */
-      position:absolute; top:50%; left:50%;
-      width:auto; height:auto; max-width:100%; max-height:100%;
-      object-fit:contain; display:block;
-      transform-origin:center center;
-      transform: translate(calc(-50% + var(--ox)), calc(-50% + var(--lift) + var(--oy))) scale(1);
-      transition: transform .12s ease;
-      cursor: grab;
-    }
-    .figure img:active{ cursor: grabbing; }
-
-    .rail{
-      display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);
-      background:var(--railBg); padding:10px; border-radius:999px; width:max-content; margin:14px auto 0 auto;
-      border:1px solid var(--railBorder); box-shadow:0 4px 14px rgba(0,0,0,.06);
-    }
-    .swatch{
-      width:var(--swatch); height:var(--swatch); border-radius:999px;
-      border:2px solid var(--ring); background:transparent; display:inline-flex; align-items:center; justify-content:center;
-      cursor:pointer; padding:0; transition:transform .08s, border-color .12s;
-    }
+    .rail{display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);background:var(--railBg);padding:10px;border-radius:999px;width:max-content;margin:14px auto 0;border:1px solid var(--railBorder);box-shadow:0 4px 14px rgba(0,0,0,.06);}
+    .swatch{width:var(--swatch);height:var(--swatch);border-radius:999px;border:2px solid var(--ring);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .08s, border-color .12s;}
     .swatch:active{ transform:scale(.95) }
     .swatch .inner{ width:70%; height:70%; border-radius:999px; display:block; background:#ccc }
     .swatch[aria-selected="true"]{ border-color:var(--active); box-shadow:0 0 0 2px rgba(5,150,105,.12) inset }
 
     .zoom-controls{position:absolute; right:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; z-index:5}
-    .zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; display:grid; place-items:center; font-size:18px; line-height:1}
+    .zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; display:grid; place-items:center; font-size:18px;}
     .zoom-btn:active{transform:scale(.96)}
 
     .notice{padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff7ed;margin-top:12px;display:none}
@@ -83,9 +49,8 @@
     <div class="wrap">
       <h1 id="modelTitle"></h1>
       <p id="sectionTitle" class="subheading">&nbsp;</p>
-
       <div class="card">
-        <figure class="figure" id="figure">
+        <figure class="figure">
           <img id="hero" src="" alt="" />
           <div class="zoom-controls" aria-label="Zoom">
             <button id="zoomIn" class="zoom-btn" title="Acercar">+</button>
@@ -95,7 +60,6 @@
         </figure>
         <div id="rail" class="rail" role="listbox" aria-label="Selecciona un color"></div>
       </div>
-
       <div id="msg" class="notice"></div>
     </div>
   </div>
@@ -106,271 +70,91 @@
     const modelKey = qs.get('model');
     const fit = (qs.get('fit') || '').toLowerCase();
     const embed = qs.get('embed') === '1';
-    const minScale = Math.max(0.2, Math.min(1, parseFloat(qs.get('min') || qs.get('minScale') || '0.5')));
+    const minScale = Math.max(0.2, Math.min(1, parseFloat(qs.get('min') || '0.5')));
     const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
-
-    // Zoom inicial (&zoom= / &z= / &initialZoom=)
-    const rawZoom = qs.get('zoom') ?? qs.get('z') ?? qs.get('initialZoom');
-
-    // Centrado inteligente (parámetros)
-    const smartEnabled = (qs.get('smart') ?? '1') !== '0';
-    const manualLift = qs.get('lift');       
-    const sensitivity = Math.max(0, Math.min(1, parseFloat(qs.get('sens') ?? '0.6')));
 
     if(embed) document.body.classList.add('embed');
 
-    const figure = document.getElementById('figure');
     const hero = document.getElementById('hero');
     const rail = document.getElementById('rail');
-    const pageTitle = document.getElementById('pageTitle');
     const msg = document.getElementById('msg');
     const autoscaleWrap = document.getElementById('autoscaleWrap');
 
-    let imageBase = '';
-    let items = [];
-    let current = 0;
+    let imageBase='', items=[], current=0;
+    let zoom=1, Z_MIN=0.6, Z_MAX=2.2, Z_STEP=0.12;
+    let offsetX=0, offsetY=0;
 
-    // límites y estado de zoom / pan
-    const Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12;
-    const clamp = (n, lo, hi)=> Math.max(lo, Math.min(hi, n));
-    let zoom = 1;
-    if(rawZoom !== null){
-      const z = parseFloat(String(rawZoom).replace(',', '.'));
-      if(!Number.isNaN(z)) zoom = clamp(z, Z_MIN, Z_MAX);
-    }
-    let ox = 0, oy = 0; // pan actual (px)
+    function showMessage(t){ msg.textContent=t; msg.style.display='block'; }
+    function clearMessage(){ msg.textContent=''; msg.style.display='none'; }
 
-    function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
-    function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
+    function jsonURL(){ const segs=location.pathname.split('/').filter(Boolean); const repo=segs.length?segs[0]:''; return (location.host.endsWith('github.io')&&repo)?`/${repo}/AllModels.json`:'/AllModels.json'; }
 
-    function jsonURL(){
-      const segs = location.pathname.split('/').filter(Boolean);
-      const repo = segs.length ? segs[0] : '';
-      if (location.host.endsWith('github.io') && repo) return `/${repo}/AllModels.json`;
-      return '/AllModels.json';
-    }
+    function chipHex(n){ if(!n) return '#9ca3af'; n=String(n).toLowerCase(); const map={'blanco':'#f5f5f5','gris':'#9ca3af','negro':'#111827','plata':'#c7c7c7','verde':'#065f46','azul':'#1d4ed8','rojo':'#dc2626','white':'#f5f5f5','gray':'#9ca3af','black':'#111827','silver':'#c7c7c7','green':'#065f46','blue':'#1d4ed8','red':'#dc2626'}; for(const k in map){if(n.includes(k)) return map[k];} return '#9ca3af'; }
 
-    function chipHex(name){
-      if(!name) return '#9ca3af';
-      const n = String(name).toLowerCase().trim();
-      const map = {
-        'blanco':'#f5f5f5','gris':'#9ca3af','negro':'#111827','plata':'#c7c7c7','verde':'#065f46','azul':'#1d4ed8','rojo':'#dc2626',
-        'white':'#f5f5f5','gray':'#9ca3af','grey':'#9ca3af','black':'#111827','silver':'#c7c7c7','green':'#065f46','blue':'#1d4ed8','red':'#dc2626'
-      };
-      for (const key of Object.keys(map)){ if (n.includes(key)) return map[key]; }
-      return '#9ca3af';
-    }
+    function applyTransform(){ hero.style.transform=`translate(${offsetX}px,${offsetY}px) scale(${zoom})`; }
 
-    // ===== Centrados / zoom / pan =====
-    function applyZoomPan(){
-      hero.style.transform = `translate(calc(-50% + ${ox}px), calc(-50% + var(--lift) + ${oy}px)) scale(${zoom})`;
-    }
-
-    // Límites de pan para no perder la imagen.
-    // Aproximamos según el tamaño del contenedor (pan extra ≈ (zoom-1)*mitad_del_contenedor)
-    function clampPan(nx, ny){
-      const rect = figure.getBoundingClientRect();
-      const maxX = (zoom - 1) * rect.width / 2;
-      const maxY = (zoom - 1) * rect.height / 2;
-      return [ clamp(nx, -maxX, maxX), clamp(ny, -maxY, maxY) ];
-    }
-
-    // Drag con mouse / touch (pan)
-    let dragging = false, startX=0, startY=0, startOX=0, startOY=0;
-    function onPointerDown(e){
-      dragging = true;
-      startX = (e.touches ? e.touches[0].clientX : e.clientX);
-      startY = (e.touches ? e.touches[0].clientY : e.clientY);
-      startOX = ox; startOY = oy;
-      e.preventDefault();
-    }
-    function onPointerMove(e){
-      if(!dragging) return;
-      const x = (e.touches ? e.touches[0].clientX : e.clientX);
-      const y = (e.touches ? e.touches[0].clientY : e.clientY);
-      // Al acercar, el mismo movimiento “arrastra” más contenido, así que dividimos por zoom
-      const dx = (x - startX) / zoom;
-      const dy = (y - startY) / zoom;
-      const [nx, ny] = clampPan(startOX + dx, startOY + dy);
-      ox = nx; oy = ny;
-      applyZoomPan();
-    }
-    function onPointerUp(){ dragging = false; }
-
-    figure.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
-    figure.addEventListener('touchstart', onPointerDown, {passive:false});
-    window.addEventListener('touchmove', onPointerMove, {passive:false});
-    window.addEventListener('touchend', onPointerUp);
-
-    // ===== Centrado inteligente (lift) =====
-    async function computeSmartLift(img){
-      // &smart=0 desactiva; &lift=xx fuerza override
-      if((qs.get('smart') ?? '1') === '0') return 0;
-      if(manualLift !== null) return parseFloat(manualLift)||0;
-
-      try{
-        const w = 256;
-        const scale = img.naturalWidth ? (w / img.naturalWidth) : 1;
-        const h = Math.max(1, Math.round(img.naturalHeight * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d', { willReadFrequently:true });
-        ctx.drawImage(img, 0, 0, w, h);
-        const {data} = ctx.getImageData(0, 0, w, h);
-
-        const TH = 20;
-        let top=-1, bottom=-1;
-        for(let y=0; y<h; y++){
-          for(let x=0; x<w; x++){
-            if(data[(y*w + x)*4 + 3] > TH){ top = y; break; }
-          }
-          if(top>=0) break;
-        }
-        for(let y=h-1; y>=0; y--){
-          for(let x=0; x<w; x++){
-            if(data[(y*w + x)*4 + 3] > TH){ bottom = y; break; }
-          }
-          if(bottom>=0) break;
-        }
-        if(top<0 || bottom<0 || bottom<=top) return 0;
-        const padTop = top;
-        const padBottom = h - 1 - bottom;
-        const imbalance = (padTop - padBottom) / h;
-        const MAX = 12;
-        return clamp(imbalance * MAX * sensitivity, -MAX, MAX);
-      }catch(e){
-        return 0;
-      }
-    }
-    async function setLiftAuto(img){
-      const lift = await computeSmartLift(img);
-      hero.style.setProperty('--lift', `${lift}%`);
-    }
-
-    // ===== Flujo de imagen/color =====
     function setHero(i){
       if(!items[i]) return;
-      current = i;
-      const it = items[i];
-      hero.onerror = () => { showMessage('No se pudo cargar la imagen del color. Revisa imageBase y el nombre del archivo.'); };
-      hero.onload = async () => {
-        clearMessage();
-        // al cambiar de imagen, no tocamos zoom, pero reseteamos pan (ox/oy) para evitar “heredar” offset raro
-        ox = 0; oy = 0;
-        await setLiftAuto(hero);
-        applyZoomPan();
-        autoScale();
-      };
-      hero.src = imageBase + it.img;
-      hero.alt = (it.name || 'Color') + ' – vista';
-
-      // marcar seleccionado
-      [...rail.querySelectorAll('.swatch')].forEach((el, k)=>{ el.setAttribute('aria-selected', String(k===i)); });
-      const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
-      if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
+      current=i;
+      const it=items[i];
+      hero.onerror=()=>{showMessage('No se pudo cargar la imagen.');};
+      hero.src=imageBase+it.img;
+      hero.alt=it.name||'Color';
+      [...rail.querySelectorAll('.swatch')].forEach((el,k)=>el.setAttribute('aria-selected',String(k===i)));
+      applyTransform();
+      autoScale();
     }
 
     function renderRail(){
-      if(!items.length){ rail.innerHTML=''; return; }
-      rail.innerHTML = items.map((c, i) => {
-        const hex = c.hex || chipHex(c.name);
-        return `
-          <button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name || ''}">
-            <span class="inner" style="background:${hex}"></span>
-          </button>
-        `;
-      }).join('');
-      [...rail.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
-
-      // teclado: flechas, +, -, 0 y WASD para pan fino
-      window.addEventListener('keydown', (e)=>{
-        if(!items.length) return;
-        if(e.key==='ArrowRight') setHero((current+1)%items.length);
-        if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
-        if(e.key==='+') { zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny; applyZoomPan(); }
-        if(e.key==='-') { zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny; applyZoomPan(); }
-        if(e.key==='0') { zoom = 1; ox=0; oy=0; applyZoomPan(); }
-
-        const nudge = (e.key==='Shift') ? 8 : 4;
-        if(['w','W'].includes(e.key)){ const [nx,ny]=clampPan(ox, oy - nudge/zoom); ox=nx; oy=ny; applyZoomPan(); }
-        if(['s','S'].includes(e.key)){ const [nx,ny]=clampPan(ox, oy + nudge/zoom); ox=nx; oy=ny; applyZoomPan(); }
-        if(['a','A'].includes(e.key)){ const [nx,ny]=clampPan(ox - nudge/zoom, oy); ox=nx; oy=ny; applyZoomPan(); }
-        if(['d','D'].includes(e.key)){ const [nx,ny]=clampPan(ox + nudge/zoom, oy); ox=nx; oy=ny; applyZoomPan(); }
-      });
+      if(!items.length){rail.innerHTML='';return;}
+      rail.innerHTML=items.map((c,i)=>`<button type="button" role="option" aria-selected="${i===0}" class="swatch" data-idx="${i}" title="${c.name||''}"><span class="inner" style="background:${c.hex||chipHex(c.name)}"></span></button>`).join('');
+      [...rail.querySelectorAll('.swatch')].forEach(el=>el.addEventListener('click',()=>setHero(+el.dataset.idx)));
     }
 
     function autoScale(){
-      if(fit !== 'auto') return;
-      const baseW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW')) || 1180;
-      const baseH = autoscaleWrap.scrollHeight;
-      const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
-      const padY = parseInt(getComputedStyle(document.body).getPropertyValue('--padY')) || 0;
-      const vw = Math.max(0, window.innerWidth  - padX*2);
-      const vh = Math.max(0, window.innerHeight - padY*2);
-      const s = Math.max(minScale, Math.min(vw / baseW, vh / baseH || 1));
-      autoscaleWrap.style.transform = `scale(${s})`;
-      autoscaleWrap.style.height = `${baseH}px`;
-      document.body.style.overflow = 'hidden';
+      if(fit!=='auto') return;
+      const baseW=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW'))||1180;
+      const baseH=autoscaleWrap.scrollHeight;
+      const padX=parseInt(getComputedStyle(document.body).getPropertyValue('--padX'))||0;
+      const padY=parseInt(getComputedStyle(document.body).getPropertyValue('--padY'))||0;
+      const vw=window.innerWidth-padX*2, vh=window.innerHeight-padY*2;
+      const s=Math.max(minScale,Math.min(vw/baseW,vh/baseH||1));
+      autoscaleWrap.style.transform=`scale(${s})`; autoscaleWrap.style.height=`${baseH}px`; document.body.style.overflow='hidden';
     }
 
-    function bindZoomControls(){
-      document.getElementById('zoomIn').addEventListener('click', ()=>{
-        zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX);
-        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
-        applyZoomPan();
-      });
-      document.getElementById('zoomOut').addEventListener('click', ()=>{
-        zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX);
-        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
-        applyZoomPan();
-      });
-      document.getElementById('zoomReset').addEventListener('click', ()=>{
-        zoom = (rawZoom && !Number.isNaN(parseFloat(rawZoom))) ? clamp(parseFloat(rawZoom), Z_MIN, Z_MAX) : 1;
-        ox = 0; oy = 0;
-        applyZoomPan();
-      });
-      hero.addEventListener('dblclick', ()=>{
-        zoom = (zoom===1 ? clamp(1.6, Z_MIN, Z_MAX) : 1);
-        if(zoom===1){ ox=0; oy=0; }
-        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
-        applyZoomPan();
-      });
+    function bindZoom(){
+      document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(Z_MAX,zoom+Z_STEP);applyTransform();}
+      document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(Z_MIN,zoom-Z_STEP);applyTransform();}
+      document.getElementById('zoomReset').onclick=()=>{zoom=1;offsetX=0;offsetY=0;applyTransform();}
+      hero.ondblclick=()=>{zoom=(zoom===1?1.6:1);applyTransform();}
     }
 
-    window.addEventListener('resize', autoScale);
+    function bindDrag(){
+      let dragging=false,startX=0,startY=0;
+      hero.addEventListener('mousedown',e=>{dragging=true;startX=e.clientX-offsetX;startY=e.clientY-offsetY;e.preventDefault();});
+      window.addEventListener('mousemove',e=>{if(dragging){offsetX=e.clientX-startX;offsetY=e.clientY-startY;applyTransform();}});
+      window.addEventListener('mouseup',()=>{dragging=false;});
+      hero.addEventListener('touchstart',e=>{const t=e.touches[0];dragging=true;startX=t.clientX-offsetX;startY=t.clientY-offsetY;});
+      hero.addEventListener('touchmove',e=>{if(dragging){const t=e.touches[0];offsetX=t.clientX-startX;offsetY=t.clientY-startY;applyTransform();}});
+      hero.addEventListener('touchend',()=>{dragging=false;});
+    }
 
-    if(!modelKey){ showMessage('No se especificó ningún modelo en la URL.'); autoScale(); return; }
+    window.addEventListener('resize',autoScale);
 
-    fetch(jsonURL(), { cache: 'no-cache' })
-      .then(r => { if(!r.ok) throw new Error('No se pudo cargar AllModels.json'); return r.json(); })
-      .then(data => {
-        const model = data && data.models && data.models[modelKey];
-        if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
-        clearMessage();
+    if(!modelKey){ showMessage('No se especificó modelo'); autoScale(); return; }
 
-        const colorsRoot = model.colors || (model.sections ? model.sections.colors : null);
-        if(!colorsRoot || !Array.isArray(colorsRoot.items) || !colorsRoot.items.length){
-          showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return;
-        }
-
-        imageBase = model.imageBase || '';
-        items = colorsRoot.items;
-
-        pageTitle.textContent = `${model.displayName || modelKey} – Colores`;
-
-        renderRail();
-        bindZoomControls();
-        setHero(Math.min(initialIdx, items.length-1));
-        requestAnimationFrame(autoScale);
-        setTimeout(autoScale, 120);
-      })
-      .catch(err => {
-        console.error(err);
-        showMessage('Error al cargar la configuración de modelos. Verifica que AllModels.json sea JSON válido y esté en la raíz del repositorio.');
-        autoScale();
-      });
+    fetch(jsonURL(),{cache:'no-cache'}).then(r=>r.json()).then(data=>{
+      const model=data.models[modelKey];
+      if(!model){showMessage(`No se encontró modelo ${modelKey}`);autoScale();return;}
+      clearMessage();
+      const colorsRoot=model.colors||model.sections.colors;
+      if(!colorsRoot||!colorsRoot.items.length){showMessage(`El modelo ${modelKey} no tiene colores`);autoScale();return;}
+      imageBase=model.imageBase||''; items=colorsRoot.items;
+      renderRail(); bindZoom(); bindDrag();
+      hero.addEventListener('load',()=>{applyTransform();autoScale();});
+      setHero(Math.min(initialIdx,items.length-1));
+      requestAnimationFrame(autoScale);
+    }).catch(err=>{console.error(err);showMessage('Error al cargar AllModels.json');autoScale();});
   })();
   </script>
 </body>
