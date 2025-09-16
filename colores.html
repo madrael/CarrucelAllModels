@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <!-- 
-  /* 16-09-2025 V1.0003 (propuesta) */
+  /* 16-09-2025 V1.0004 (propuesta) */
   Archivo: colores.html
   Descripción: Selector de colores dinámico desde AllModels.json (compatible con models.colors y models.sections.colors)
   Cambios:
    - V1.0001: Zoom inicial por URL (&zoom= / &z= / &initialZoom=)
    - V1.0002: Zoom centrado con translate(-50%,-50%)
-   - V1.0003: Centrado inteligente por análisis de píxeles (ajuste vertical automático --lift)
+   - V1.0003: Centrado inteligente (--lift) por análisis de alfa
+   - V1.0004: Pan (arrastrar con mouse/touch) + límites y reset
 -->
 <html lang="es">
 <head>
@@ -38,19 +39,23 @@
     .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px;position:relative}
     .figure{
       background:#fff;border-radius:16px;overflow:hidden;position:relative;
-      display:flex;align-items:center;justify-content:center;min-height:420px;
+      display:flex;align-items:center;justify-content:center;min-height:420px; user-select:none; touch-action:none;
     }
 
-    /* Img centrada y con ajuste dinámico --lift */
+    /* Img centrada + ajuste vertical (--lift) + pan en px (--ox, --oy) */
     .figure img{
-      --lift: 0%; /* se auto-calcula por JS; puede sobreescribirse por URL */
+      --lift: 0%;
+      --ox: 0px; /* pan horizontal */
+      --oy: 0px; /* pan vertical */
       position:absolute; top:50%; left:50%;
       width:auto; height:auto; max-width:100%; max-height:100%;
       object-fit:contain; display:block;
       transform-origin:center center;
-      transform: translate(-50%, calc(-50% + var(--lift))) scale(1);
-      transition: transform .15s ease;
+      transform: translate(calc(-50% + var(--ox)), calc(-50% + var(--lift) + var(--oy))) scale(1);
+      transition: transform .12s ease;
+      cursor: grab;
     }
+    .figure img:active{ cursor: grabbing; }
 
     .rail{
       display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);
@@ -80,7 +85,7 @@
       <p id="sectionTitle" class="subheading">&nbsp;</p>
 
       <div class="card">
-        <figure class="figure">
+        <figure class="figure" id="figure">
           <img id="hero" src="" alt="" />
           <div class="zoom-controls" aria-label="Zoom">
             <button id="zoomIn" class="zoom-btn" title="Acercar">+</button>
@@ -107,16 +112,14 @@
     // Zoom inicial (&zoom= / &z= / &initialZoom=)
     const rawZoom = qs.get('zoom') ?? qs.get('z') ?? qs.get('initialZoom');
 
-    // Ajuste inteligente params
-    // - &smart=0 desactiva el modo inteligente.
-    // - &lift= -6  (override manual en %, negativo sube, positivo baja)
-    // - &sens=0.6  sensibilidad (0..1) para escalar el ajuste calculado (default .6)
+    // Centrado inteligente (parámetros)
     const smartEnabled = (qs.get('smart') ?? '1') !== '0';
-    const manualLift = qs.get('lift');       // porcentaje
+    const manualLift = qs.get('lift');       
     const sensitivity = Math.max(0, Math.min(1, parseFloat(qs.get('sens') ?? '0.6')));
 
     if(embed) document.body.classList.add('embed');
 
+    const figure = document.getElementById('figure');
     const hero = document.getElementById('hero');
     const rail = document.getElementById('rail');
     const pageTitle = document.getElementById('pageTitle');
@@ -127,7 +130,7 @@
     let items = [];
     let current = 0;
 
-    // límites y estado de zoom
+    // límites y estado de zoom / pan
     const Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12;
     const clamp = (n, lo, hi)=> Math.max(lo, Math.min(hi, n));
     let zoom = 1;
@@ -135,6 +138,7 @@
       const z = parseFloat(String(rawZoom).replace(',', '.'));
       if(!Number.isNaN(z)) zoom = clamp(z, Z_MIN, Z_MAX);
     }
+    let ox = 0, oy = 0; // pan actual (px)
 
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
@@ -142,9 +146,7 @@
     function jsonURL(){
       const segs = location.pathname.split('/').filter(Boolean);
       const repo = segs.length ? segs[0] : '';
-      if (location.host.endsWith('github.io') && repo){
-        return `/${repo}/AllModels.json`;
-      }
+      if (location.host.endsWith('github.io') && repo) return `/${repo}/AllModels.json`;
       return '/AllModels.json';
     }
 
@@ -159,15 +161,56 @@
       return '#9ca3af';
     }
 
-    function applyZoom(){ hero.style.transform = `translate(-50%, calc(-50% + var(--lift))) scale(${zoom})`; }
+    // ===== Centrados / zoom / pan =====
+    function applyZoomPan(){
+      hero.style.transform = `translate(calc(-50% + ${ox}px), calc(-50% + var(--lift) + ${oy}px)) scale(${zoom})`;
+    }
 
-    // === Centrado inteligente por análisis de alfa ===
+    // Límites de pan para no perder la imagen.
+    // Aproximamos según el tamaño del contenedor (pan extra ≈ (zoom-1)*mitad_del_contenedor)
+    function clampPan(nx, ny){
+      const rect = figure.getBoundingClientRect();
+      const maxX = (zoom - 1) * rect.width / 2;
+      const maxY = (zoom - 1) * rect.height / 2;
+      return [ clamp(nx, -maxX, maxX), clamp(ny, -maxY, maxY) ];
+    }
+
+    // Drag con mouse / touch (pan)
+    let dragging = false, startX=0, startY=0, startOX=0, startOY=0;
+    function onPointerDown(e){
+      dragging = true;
+      startX = (e.touches ? e.touches[0].clientX : e.clientX);
+      startY = (e.touches ? e.touches[0].clientY : e.clientY);
+      startOX = ox; startOY = oy;
+      e.preventDefault();
+    }
+    function onPointerMove(e){
+      if(!dragging) return;
+      const x = (e.touches ? e.touches[0].clientX : e.clientX);
+      const y = (e.touches ? e.touches[0].clientY : e.clientY);
+      // Al acercar, el mismo movimiento “arrastra” más contenido, así que dividimos por zoom
+      const dx = (x - startX) / zoom;
+      const dy = (y - startY) / zoom;
+      const [nx, ny] = clampPan(startOX + dx, startOY + dy);
+      ox = nx; oy = ny;
+      applyZoomPan();
+    }
+    function onPointerUp(){ dragging = false; }
+
+    figure.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    figure.addEventListener('touchstart', onPointerDown, {passive:false});
+    window.addEventListener('touchmove', onPointerMove, {passive:false});
+    window.addEventListener('touchend', onPointerUp);
+
+    // ===== Centrado inteligente (lift) =====
     async function computeSmartLift(img){
-      if(!smartEnabled) return 0;              // desactivado
-      if(manualLift !== null) return parseFloat(manualLift)||0; // override manual
+      // &smart=0 desactiva; &lift=xx fuerza override
+      if((qs.get('smart') ?? '1') === '0') return 0;
+      if(manualLift !== null) return parseFloat(manualLift)||0;
 
       try{
-        // Escalamos a ancho 256px para rendimiento
         const w = 256;
         const scale = img.naturalWidth ? (w / img.naturalWidth) : 1;
         const h = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -177,52 +220,36 @@
         ctx.drawImage(img, 0, 0, w, h);
         const {data} = ctx.getImageData(0, 0, w, h);
 
-        const TH = 20; // umbral de alpha (>20 ≈ píxel visible)
+        const TH = 20;
         let top=-1, bottom=-1;
-
-        // Buscar primera fila con píxeles visibles
         for(let y=0; y<h; y++){
           for(let x=0; x<w; x++){
-            const a = data[(y*w + x)*4 + 3];
-            if(a > TH){ top = y; break; }
+            if(data[(y*w + x)*4 + 3] > TH){ top = y; break; }
           }
           if(top>=0) break;
         }
-        // Buscar última fila con píxeles visibles
         for(let y=h-1; y>=0; y--){
           for(let x=0; x<w; x++){
-            const a = data[(y*w + x)*4 + 3];
-            if(a > TH){ bottom = y; break; }
+            if(data[(y*w + x)*4 + 3] > TH){ bottom = y; break; }
           }
           if(bottom>=0) break;
         }
-
-        if(top<0 || bottom<0 || bottom<=top){
-          return 0; // no se pudo detectar contenido
-        }
-
-        const contentH = bottom - top + 1;
-        const padTop = top;                 // “aire” arriba
-        const padBottom = h - 1 - bottom;   // “aire” abajo
-
-        // Diferencia relativa de pads (positiva => más aire arriba => subimos)
-        const imbalance = (padTop - padBottom) / h; // rango aprox [-1,1]
-        // Convertimos a porcentaje de la altura del elemento (limitado)
-        const MAX = 12; // % máximo de ajuste (subida/bajada)
-        const lift = clamp(imbalance * MAX * sensitivity, -MAX, MAX);
-
-        return lift; // en %
+        if(top<0 || bottom<0 || bottom<=top) return 0;
+        const padTop = top;
+        const padBottom = h - 1 - bottom;
+        const imbalance = (padTop - padBottom) / h;
+        const MAX = 12;
+        return clamp(imbalance * MAX * sensitivity, -MAX, MAX);
       }catch(e){
-        // Si el canvas está "tainted" (CORS) o falla, no tocamos nada
         return 0;
       }
     }
-
     async function setLiftAuto(img){
       const lift = await computeSmartLift(img);
       hero.style.setProperty('--lift', `${lift}%`);
     }
 
+    // ===== Flujo de imagen/color =====
     function setHero(i){
       if(!items[i]) return;
       current = i;
@@ -230,8 +257,10 @@
       hero.onerror = () => { showMessage('No se pudo cargar la imagen del color. Revisa imageBase y el nombre del archivo.'); };
       hero.onload = async () => {
         clearMessage();
-        await setLiftAuto(hero);  // calcula y aplica --lift según la imagen cargada
-        applyZoom();              // aplica zoom con el nuevo lift
+        // al cambiar de imagen, no tocamos zoom, pero reseteamos pan (ox/oy) para evitar “heredar” offset raro
+        ox = 0; oy = 0;
+        await setLiftAuto(hero);
+        applyZoomPan();
         autoScale();
       };
       hero.src = imageBase + it.img;
@@ -255,14 +284,20 @@
       }).join('');
       [...rail.querySelectorAll('.swatch')].forEach(el=> el.addEventListener('click', ()=> setHero(+el.dataset.idx)));
 
-      // navegación por teclado
+      // teclado: flechas, +, -, 0 y WASD para pan fino
       window.addEventListener('keydown', (e)=>{
         if(!items.length) return;
         if(e.key==='ArrowRight') setHero((current+1)%items.length);
         if(e.key==='ArrowLeft')  setHero((current-1+items.length)%items.length);
-        if(e.key==='+') { zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); applyZoom(); }
-        if(e.key==='-') { zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); applyZoom(); }
-        if(e.key==='0') { zoom = 1; applyZoom(); }
+        if(e.key==='+') { zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny; applyZoomPan(); }
+        if(e.key==='-') { zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny; applyZoomPan(); }
+        if(e.key==='0') { zoom = 1; ox=0; oy=0; applyZoomPan(); }
+
+        const nudge = (e.key==='Shift') ? 8 : 4;
+        if(['w','W'].includes(e.key)){ const [nx,ny]=clampPan(ox, oy - nudge/zoom); ox=nx; oy=ny; applyZoomPan(); }
+        if(['s','S'].includes(e.key)){ const [nx,ny]=clampPan(ox, oy + nudge/zoom); ox=nx; oy=ny; applyZoomPan(); }
+        if(['a','A'].includes(e.key)){ const [nx,ny]=clampPan(ox - nudge/zoom, oy); ox=nx; oy=ny; applyZoomPan(); }
+        if(['d','D'].includes(e.key)){ const [nx,ny]=clampPan(ox + nudge/zoom, oy); ox=nx; oy=ny; applyZoomPan(); }
       });
     }
 
@@ -281,10 +316,27 @@
     }
 
     function bindZoomControls(){
-      document.getElementById('zoomIn').addEventListener('click', ()=>{ zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
-      document.getElementById('zoomOut').addEventListener('click', ()=>{ zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
-      document.getElementById('zoomReset').addEventListener('click', ()=>{ zoom = 1; applyZoom(); });
-      hero.addEventListener('dblclick', ()=>{ zoom = (zoom===1? clamp(1.6, Z_MIN, Z_MAX):1); applyZoom(); });
+      document.getElementById('zoomIn').addEventListener('click', ()=>{
+        zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX);
+        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
+        applyZoomPan();
+      });
+      document.getElementById('zoomOut').addEventListener('click', ()=>{
+        zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX);
+        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
+        applyZoomPan();
+      });
+      document.getElementById('zoomReset').addEventListener('click', ()=>{
+        zoom = (rawZoom && !Number.isNaN(parseFloat(rawZoom))) ? clamp(parseFloat(rawZoom), Z_MIN, Z_MAX) : 1;
+        ox = 0; oy = 0;
+        applyZoomPan();
+      });
+      hero.addEventListener('dblclick', ()=>{
+        zoom = (zoom===1 ? clamp(1.6, Z_MIN, Z_MAX) : 1);
+        if(zoom===1){ ox=0; oy=0; }
+        const [nx,ny]=clampPan(ox,oy); ox=nx; oy=ny;
+        applyZoomPan();
+      });
     }
 
     window.addEventListener('resize', autoScale);
