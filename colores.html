@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <!-- 
-  /* 16-09-2025 V1.0002 (propuesta) */
+  /* 16-09-2025 V1.0003 (propuesta) */
   Archivo: colores.html
-  Descripción: Selector de colores dinámico desde AllModels.json (compatible con esquema models.colors y models.sections.colors)
+  Descripción: Selector de colores dinámico desde AllModels.json (compatible con models.colors y models.sections.colors)
   Cambios:
-   - V1.0001: Soporte de zoom inicial vía &zoom= / &z= / &initialZoom= (clamp 0.6–2.2)
-   - V1.0002: Zoom centrado con translate(-50%,-50%) para que el vehículo no “caiga” al acercar
+   - V1.0001: Zoom inicial por URL (&zoom= / &z= / &initialZoom=)
+   - V1.0002: Zoom centrado con translate(-50%,-50%)
+   - V1.0003: Centrado inteligente por análisis de píxeles (ajuste vertical automático --lift)
 -->
 <html lang="es">
 <head>
@@ -15,11 +16,11 @@
   <style>
     :root{
       --ink:#111; --muted:#4b5563; --card:#fff;
-      --padX:20px; --padY:28px;                /* compacta con &embed=1 */
+      --padX:20px; --padY:28px;
       --stageW:1180px;
-      --railBg:#fff; --railBorder:#e5e7eb;     /* píldora blanca con borde sutil */
-      --swatch:22px; --swatchGap:14px;         /* tamaño de burbujas */
-      --ring:#d1d5db; --active:#059669;        /* aro gris / aro verde activo */
+      --railBg:#fff; --railBorder:#e5e7eb;
+      --swatch:22px; --swatchGap:14px;
+      --ring:#d1d5db; --active:#059669;
     }
     *{box-sizing:border-box}
     html, body{height:100%}
@@ -30,29 +31,27 @@
     }
     body.embed{ --padX:10px; --padY:10px; }
 
-    /* escenario base para iframes (escalable) */
     #autoscaleWrap{ transform-origin: top left; width:var(--stageW); }
     .wrap{max-width:var(--stageW);margin:0 auto}
     .wrap > h1, .wrap > .subheading{ display:none !important }
 
-    /* tarjeta y hero */
     .card{background:var(--card);border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:16px;position:relative}
     .figure{
       background:#fff;border-radius:16px;overflow:hidden;position:relative;
       display:flex;align-items:center;justify-content:center;min-height:420px;
     }
 
-    /* ⬇️ Cambio clave: img absoluto, centrado y con translate(-50%,-50%) */
+    /* Img centrada y con ajuste dinámico --lift */
     .figure img{
+      --lift: 0%; /* se auto-calcula por JS; puede sobreescribirse por URL */
       position:absolute; top:50%; left:50%;
       width:auto; height:auto; max-width:100%; max-height:100%;
       object-fit:contain; display:block;
       transform-origin:center center;
-      transform: translate(-50%,-50%) scale(1);
+      transform: translate(-50%, calc(-50% + var(--lift))) scale(1);
       transition: transform .15s ease;
     }
 
-    /* rail/píldora de burbujas */
     .rail{
       display:flex;align-items:center;justify-content:center;gap:var(--swatchGap);
       background:var(--railBg); padding:10px; border-radius:999px; width:max-content; margin:14px auto 0 auto;
@@ -67,7 +66,6 @@
     .swatch .inner{ width:70%; height:70%; border-radius:999px; display:block; background:#ccc }
     .swatch[aria-selected="true"]{ border-color:var(--active); box-shadow:0 0 0 2px rgba(5,150,105,.12) inset }
 
-    /* Controles de zoom (lado derecho) */
     .zoom-controls{position:absolute; right:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; z-index:5}
     .zoom-btn{width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; display:grid; place-items:center; font-size:18px; line-height:1}
     .zoom-btn:active{transform:scale(.96)}
@@ -100,14 +98,22 @@
   <script>
   (function(){
     const qs = new URLSearchParams(location.search);
-    const modelKey = qs.get('model');                 // requerido (?model=MG_RX9)
-    const fit = (qs.get('fit') || '').toLowerCase();  // 'auto' => escalar
-    const embed = qs.get('embed') === '1';            // '1' => compactar paddings
+    const modelKey = qs.get('model');
+    const fit = (qs.get('fit') || '').toLowerCase();
+    const embed = qs.get('embed') === '1';
     const minScale = Math.max(0.2, Math.min(1, parseFloat(qs.get('min') || qs.get('minScale') || '0.5')));
     const initialIdx = Math.max(0, parseInt(qs.get('colorIndex') || '0',10) || 0);
 
-    // --- Zoom inicial por parámetro (&zoom= / &z= / &initialZoom=), clamp [Z_MIN, Z_MAX]
+    // Zoom inicial (&zoom= / &z= / &initialZoom=)
     const rawZoom = qs.get('zoom') ?? qs.get('z') ?? qs.get('initialZoom');
+
+    // Ajuste inteligente params
+    // - &smart=0 desactiva el modo inteligente.
+    // - &lift= -6  (override manual en %, negativo sube, positivo baja)
+    // - &sens=0.6  sensibilidad (0..1) para escalar el ajuste calculado (default .6)
+    const smartEnabled = (qs.get('smart') ?? '1') !== '0';
+    const manualLift = qs.get('lift');       // porcentaje
+    const sensitivity = Math.max(0, Math.min(1, parseFloat(qs.get('sens') ?? '0.6')));
 
     if(embed) document.body.classList.add('embed');
 
@@ -123,7 +129,7 @@
 
     // límites y estado de zoom
     const Z_MIN = 0.6, Z_MAX = 2.2, Z_STEP = 0.12;
-    function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+    const clamp = (n, lo, hi)=> Math.max(lo, Math.min(hi, n));
     let zoom = 1;
     if(rawZoom !== null){
       const z = parseFloat(String(rawZoom).replace(',', '.'));
@@ -133,7 +139,6 @@
     function showMessage(text){ msg.textContent = text; msg.style.display = 'block'; }
     function clearMessage(){ msg.textContent = ''; msg.style.display = 'none'; }
 
-    // URL robusta para GitHub Pages (raíz o subcarpetas)
     function jsonURL(){
       const segs = location.pathname.split('/').filter(Boolean);
       const repo = segs.length ? segs[0] : '';
@@ -154,9 +159,68 @@
       return '#9ca3af';
     }
 
-    /* ⬇️ Cambio clave: el transform siempre incluye translate(-50%,-50%) para centrar */
-    function applyZoom(){
-      hero.style.transform = `translate(-50%,-50%) scale(${zoom})`;
+    function applyZoom(){ hero.style.transform = `translate(-50%, calc(-50% + var(--lift))) scale(${zoom})`; }
+
+    // === Centrado inteligente por análisis de alfa ===
+    async function computeSmartLift(img){
+      if(!smartEnabled) return 0;              // desactivado
+      if(manualLift !== null) return parseFloat(manualLift)||0; // override manual
+
+      try{
+        // Escalamos a ancho 256px para rendimiento
+        const w = 256;
+        const scale = img.naturalWidth ? (w / img.naturalWidth) : 1;
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d', { willReadFrequently:true });
+        ctx.drawImage(img, 0, 0, w, h);
+        const {data} = ctx.getImageData(0, 0, w, h);
+
+        const TH = 20; // umbral de alpha (>20 ≈ píxel visible)
+        let top=-1, bottom=-1;
+
+        // Buscar primera fila con píxeles visibles
+        for(let y=0; y<h; y++){
+          for(let x=0; x<w; x++){
+            const a = data[(y*w + x)*4 + 3];
+            if(a > TH){ top = y; break; }
+          }
+          if(top>=0) break;
+        }
+        // Buscar última fila con píxeles visibles
+        for(let y=h-1; y>=0; y--){
+          for(let x=0; x<w; x++){
+            const a = data[(y*w + x)*4 + 3];
+            if(a > TH){ bottom = y; break; }
+          }
+          if(bottom>=0) break;
+        }
+
+        if(top<0 || bottom<0 || bottom<=top){
+          return 0; // no se pudo detectar contenido
+        }
+
+        const contentH = bottom - top + 1;
+        const padTop = top;                 // “aire” arriba
+        const padBottom = h - 1 - bottom;   // “aire” abajo
+
+        // Diferencia relativa de pads (positiva => más aire arriba => subimos)
+        const imbalance = (padTop - padBottom) / h; // rango aprox [-1,1]
+        // Convertimos a porcentaje de la altura del elemento (limitado)
+        const MAX = 12; // % máximo de ajuste (subida/bajada)
+        const lift = clamp(imbalance * MAX * sensitivity, -MAX, MAX);
+
+        return lift; // en %
+      }catch(e){
+        // Si el canvas está "tainted" (CORS) o falla, no tocamos nada
+        return 0;
+      }
+    }
+
+    async function setLiftAuto(img){
+      const lift = await computeSmartLift(img);
+      hero.style.setProperty('--lift', `${lift}%`);
     }
 
     function setHero(i){
@@ -164,6 +228,12 @@
       current = i;
       const it = items[i];
       hero.onerror = () => { showMessage('No se pudo cargar la imagen del color. Revisa imageBase y el nombre del archivo.'); };
+      hero.onload = async () => {
+        clearMessage();
+        await setLiftAuto(hero);  // calcula y aplica --lift según la imagen cargada
+        applyZoom();              // aplica zoom con el nuevo lift
+        autoScale();
+      };
       hero.src = imageBase + it.img;
       hero.alt = (it.name || 'Color') + ' – vista';
 
@@ -171,10 +241,6 @@
       [...rail.querySelectorAll('.swatch')].forEach((el, k)=>{ el.setAttribute('aria-selected', String(k===i)); });
       const active = rail.querySelector(`.swatch[data-idx="${i}"]`);
       if(active) active.scrollIntoView({ inline:'nearest', block:'nearest', behavior:'smooth' });
-
-      // mantener/aplicar zoom (centrado)
-      applyZoom();
-      autoScale();
     }
 
     function renderRail(){
@@ -200,9 +266,8 @@
       });
     }
 
-    // AutoScale para iframe
     function autoScale(){
-      if(fit !== 'auto') return; // activar con ?fit=auto
+      if(fit !== 'auto') return;
       const baseW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stageW')) || 1180;
       const baseH = autoscaleWrap.scrollHeight;
       const padX = parseInt(getComputedStyle(document.body).getPropertyValue('--padX')) || 0;
@@ -215,7 +280,6 @@
       document.body.style.overflow = 'hidden';
     }
 
-    // Controles zoom
     function bindZoomControls(){
       document.getElementById('zoomIn').addEventListener('click', ()=>{ zoom = clamp(zoom + Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
       document.getElementById('zoomOut').addEventListener('click', ()=>{ zoom = clamp(zoom - Z_STEP, Z_MIN, Z_MAX); applyZoom(); });
@@ -234,7 +298,6 @@
         if(!model){ showMessage(`No se encontró el modelo "${modelKey}" en AllModels.json.`); autoScale(); return; }
         clearMessage();
 
-        // lee colors desde el esquema nuevo (model.colors) o el anterior (model.sections.colors)
         const colorsRoot = model.colors || (model.sections ? model.sections.colors : null);
         if(!colorsRoot || !Array.isArray(colorsRoot.items) || !colorsRoot.items.length){
           showMessage(`El modelo "${modelKey}" no tiene colores definidos.`); autoScale(); return;
@@ -247,11 +310,7 @@
 
         renderRail();
         bindZoomControls();
-
-        hero.addEventListener('load', applyZoom);  // mantener zoom (centrado)
-        hero.addEventListener('load', autoScale);  // ajustar a iframe
         setHero(Math.min(initialIdx, items.length-1));
-
         requestAnimationFrame(autoScale);
         setTimeout(autoScale, 120);
       })
